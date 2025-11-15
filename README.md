@@ -1,9 +1,7 @@
 # ***`Gradio Agents & MCP Hackathon Winter Edition 2025`***
----
----
 
 ## 🏁 Overview
-This repository hosts our team's submission for **Track 2: Agentic Applications** in the [Agents & MCP Hackathon (Winter 2025)](https://huggingface.co/spaces/Agents-MCP-Hackathon-Winter25/README).
+This repository hosts our team's submission for **Track 2: MCP in Action** in the [MCP's 1st Birthday Hackathon](https://huggingface.co/MCP-1st-Birthday).
 
 Our goal is to build an **autonomous agentic system** that demonstrates:
 - **Planning, reasoning, and execution**
@@ -15,8 +13,6 @@ We'll use **LangGraph** as our orchestration backbone for building multi-turn, t
 
 > ***`Check hackathon README for detilaed requirements.`***
 
----
-
 ## 🧠 ***`Tools & Frameworks`***
 
 - 🧩 [LangGraph](https://docs.langchain.com/oss/python/langgraph/overview): for multi-agent orchestration and planning
@@ -24,7 +20,7 @@ We'll use **LangGraph** as our orchestration backbone for building multi-turn, t
 - 🧠 **LLM Engines:** [OpenAI](https://openai.com) / [Anthropic](https://www.anthropic.com) — reasoning and planning models
   - gpt-oss inference providers
     - [Open Router](https://openrouter.ai/openai/gpt-oss-20b):
-      - langchain wrapper: https://github.com/langchain-ai/langchain/discussions/27964?utm_source=chatgpt.com
+      - LangChain Wrapper: https://github.com/langchain-ai/langchain/discussions/27964
     - [TogetherAI](https://www.together.ai/openai)
 - 💬 [Gradio](https://www.gradio.app/): for the UI and context-engineering demos
 - ⚙️ [MCP](https://modelcontextprotocol.io/docs/getting-started/intro) Tools: standardized interfaces for Gmail, Google Calendar, Voice technologies and other APIs
@@ -36,9 +32,6 @@ We'll use **LangGraph** as our orchestration backbone for building multi-turn, t
 - 📄 [Docling](https://www.docling.ai): for parsing and analyzing uploaded CV documents
 - 🧱 [Pydantic](https://docs.pydantic.dev/latest/): for structured outputs and data validation
 - 🔀 [Parlant](https://github.com/emcie-co/parlant): enables agents to handle multi-intent, free-form conversations by dynamically activating relevant guidelines instead of rigidly routing to a single sub-agent — solving the context fragmentation problem inherent in traditional LangGraph supervisor patterns.
-
-
----
 
 ## 📚 ***`References for Context Engineering`***
 
@@ -54,9 +47,6 @@ We'll use **LangGraph** as our orchestration backbone for building multi-turn, t
 - [Langgraph summary of what frontier labs and firms apply](https://www.youtube.com/watch?v=XFCkrYHHfpQ)
 
 These resources guide our approach to **memory management, planning transparency, and tool orchestration** in autonomous agents.
-
----
-
 
 ## 🧾  ***`HR Candidate Screening Multi-Agent System`***
 An autonomous HR assistant that streamlines early recruitment through five steps:
@@ -113,7 +103,6 @@ flowchart TD
     Subagents --> Data
     MainAgent --> Data
     MainAgent --> UI
-
 ```
 
 **GCP Setup for Judges:**
@@ -238,15 +227,9 @@ agentic-hr/
 └── LICENSE
 ```
 
-
-
-
----
-
 ## ***`Multi Agent System Architecture`***
 Below you will find an overview of the subagent components that mnake upo the entire system. More detailed information and brainstorming is decicated to the `docs/agents/..` directory.
 
----
 ### 1) ***`Orchestrator`***
 #### Overview
 
@@ -254,27 +237,19 @@ The orchestrator agent is reponsible for **supervising** and **triggering** the 
 
 > For more planning and info, go to `docs/agents/agent_orchestrator.md`
 
-
----
 ### 2) ***`CV Screener`***
 #### Overview
 The cv screening agent deals with scanning the applicant's CV's, and deciding who are fruitful versus unpromising candidates as a first filtering step.
 
 > For more planning and info, go to `docs/agents/cv_screening.md`
 
-
----
 ### 3) 🎙️ ***`Voice Screening Agent`***
-
 
 #### Overview
 The **Voice Screening Agent** conducts automated phone interviews and integrates with the **LangGraph HR Orchestrator**.  
 It uses **Twilio** for phone calls, **Whisper/ASR** for speech-to-text, **ElevenLabs** for natural voice output, and **LangGraph** for dialogue logic.
 
 > For more planning and info, go to `docs/agents/voice_screening.md`
----
-
-
 
 ### 4) ***`Google MCP Agents`***
 #### Overview
@@ -292,9 +267,6 @@ LLM-as-a-judge will be leveraged to judge call screening results.
 
 > For more planning and info, go to `docs/agents/judging_agent.md`
 
-
----
-
 ## 🗄️ ***`Data Layer`***
 
 The system uses a unified **SQLAlchemy-based database** for both **candidate data management** and **context engineering**.
@@ -310,9 +282,6 @@ The system uses a unified **SQLAlchemy-based database** for both **candidate dat
 
 We use [**SQLAlchemy**](https://www.sqlalchemy.org) as the ORM layer to manage both structured candidate data and **persistent agent memory**, allowing the system to offload, summarize, and retrieve context efficiently across sessions.
 
-
----
-
 ## 🗃️ ***`Prompt Archive`***
 
 To ensure consistent behavior and easy experimentation across subagents, the system includes a **centralized prompt management layer**.
@@ -325,12 +294,7 @@ To ensure consistent behavior and easy experimentation across subagents, the sys
 | 🧩 **Dynamic Injection** | Enables context-dependent prompt construction using retrieved memory or database summaries |
 | 📚 **Archive** | Keeps older prompt variants for reproducibility and ablation testing |
 
-
-
----
-
 ## 📺 ***`Gradio Interface`***
-
 
 We use **Gradio** to demonstrate our agent's reasoning, planning, and tool use interactively — fully aligned with the **Agents & MCP Hackathon** focus on **context engineering** and **user value**.
 
@@ -375,8 +339,6 @@ gr.JSON() or custom visual showing the current plan state, e.g.:
 | 12:05 | Gmail    | `send_invite()`  | Sent      |
 | 12:06 | Calendar | `create_event()` | Confirmed |
 
----
-
 ## 🔗 ***`MCP Integration (Best Practice Setup)`***
 
 To align fully with the **Agents & MCP Hackathon** standards, our system will use or extend a **standardized MCP server** for integrations such as **Gmail** and **Google Calendar** — and potentially **Scion Voice** in later stages.
@@ -416,7 +378,7 @@ This server manages authentication, token refresh, and rate limiting — while e
 
 and
 
-```
+```json
 {
   "action": "calendar.create_event",
   "parameters": { "summary": "HR Interview", "start": "...", "end": "..." }
@@ -464,10 +426,6 @@ If a user blends both topics, ***both guidelines trigger***, producing a unified
 Together, ***Parlant + LangGraph*** merge structured planning with conversational adaptability —
 enabling our HR agent to reason, plan, and respond naturally to complex, multi-topic interactions.
 
-
-
----
-
 ## ✨ ***`Agentic Enhancements [BONUS]`***
 
 To make the system more **autonomous, interpretable, and resilient**, we integrated a few lightweight yet powerful improvements:
@@ -480,20 +438,13 @@ To make the system more **autonomous, interpretable, and resilient**, we integra
 
 These enhancements demonstrate **true agentic behavior** — autonomous planning, adaptive execution, and transparent reasoning — in a simple, explainable way.
 
-
----
-
 ## 👥 ***`Team`***
 | Member   |
 | -------- |
-| [Name 1] |
-| [Name 2] |
-| [Name 3] |
-| [Name 4] |
-
-
----
-
+| [Sebastian Wefers](https://github.com/Ocean-code-1995) |
+| [Owen Kaplinsky](https://github.com/owenkaplinsky) |
+| [SrikarMK](https://github.com/Srikarmk) |
+| [Dmitri Moscoglo](https://github.com/DimiM99) |
 
 # ***`License`***
 
@@ -501,6 +452,6 @@ This project includes and builds upon [gmail-mcp](https://github.com/theposch/gm
 which is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
 This repository extends gmail-mcp for experimental integration and automation with Claude Desktop.  
-All modifications (if any) are distributed under the same GPLv3 license.
+All modifications are distributed under the same GPLv3 license.
 
 > **Note:** The original gmail-mcp code has not been modified at this stage.
