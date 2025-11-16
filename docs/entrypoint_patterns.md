@@ -15,6 +15,30 @@ Below is a clean overview of the three architectural patterns for triggering **C
 8. Pipeline continues (voice → scheduling → final decision)
 
 ---
+```sql
+[User (Streamlit UI)]
+   ↓
+   Upload CV + metadata (HTTP POST)
+   ↓
+[Orchestrator API]
+   ↓
+   Save CV file (local or cloud)
+   ↓
+   Write candidate entry to DB
+   ↓
+   Trigger parsing pipeline
+   ↓
+   Update parsed_cv_json + status='parsed'
+   ↓
+   Orchestrator runs CV Screening Agent
+   ↓
+   Write results to DB + status='cv_screened'
+   ↓
+[Streamlit polls /api/status/<candidate_id>]
+   ↓
+   Display updated status + scores
+```
+---
 
 ## 🧠 Pattern A — Orchestrator-Driven State Machine (Recommended)
 
