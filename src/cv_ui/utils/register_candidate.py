@@ -1,9 +1,9 @@
 from src.database.candidates.client import SessionLocal
 from src.database.candidates.models import Candidate
+from src.state.candidate import CandidateStatus
 
 def register_candidate(full_name: str, email: str, phone: str, cv_path: str) -> None:
-    """
-    Register a new candidate in the database.
+    """Register a new candidate in the database.
     """
     with SessionLocal() as session:
         candidate = Candidate(
@@ -11,7 +11,7 @@ def register_candidate(full_name: str, email: str, phone: str, cv_path: str) -> 
             email=email,
             phone_number=phone,
             cv_file_path=cv_path,
-            status="applied",
+            status=CandidateStatus.applied,
         )
         session.add(candidate)
         session.commit()

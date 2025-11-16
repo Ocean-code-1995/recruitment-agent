@@ -1,16 +1,19 @@
 import os
 import uuid
+from pathlib import Path
 import streamlit as st
 from datetime import datetime
 
-from src.database.candidates.client import SessionLocal
-from src.database.candidates.models import Candidate
 from src.cv_ui.utils.register_candidate import register_candidate
 from src.cv_ui.utils.save_cv import save_cv
+from src.cv_ui.utils.pdf_to_markdown import pdf_to_markdown
+from src.cv_ui.utils.parced_cv_path import update_parsed_cv_path
 
 # --- Configuration ---
-UPLOAD_DIR = os.getenv("CV_UPLOAD_PATH", "src/database/cvs/uploads")
+UPLOAD_DIR = Path(os.getenv("CV_UPLOAD_PATH", "src/database/cvs/uploads"))
+PARSED_DIR = Path(os.getenv("CV_PARSED_PATH", "src/database/cvs/parsed"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(PARSED_DIR, exist_ok=True)
 
 st.set_page_config(page_title="AI Engineer Job Portal", page_icon="🤖", layout="centered")
 
@@ -59,13 +62,26 @@ if submitted:
     elif not (full_name and email):
         st.error("Full name and email are required.")
     else:
+        # ~~~~~~~~~~~~~~~~process the application~~~~~~~~~~~~~~~
         try:
-            # Save CV using shared helper
+            # 1️⃣ Save CV locally
             file_path = save_cv(uploaded_file, uploaded_file.name)
+            file_path = Path(file_path)
 
-            # Register candidate in DB
-            register_candidate(full_name, email, phone, file_path, )
+            # 2️⃣ Register candidate
+            register_candidate(full_name, email, phone, str(file_path))
 
+            # 3️⃣ Parse automatically → save in parsed/
+            st.info("🧠 Parsing your CV, please wait...")
+            pdf_to_markdown(
+                input_path=file_path,
+                output_path=PARSED_DIR,
+                model="gpt-4.1-mini",
+            )
+            # 4️⃣ Update parsed CV path in DB
+            parsed_path = PARSED_DIR / (file_path.stem + ".txt")
+            update_parsed_cv_path(email, str(parsed_path))
+        
             st.success(f"✅ Application submitted successfully for {full_name}!")
             st.info("Your application has been recorded. You will receive updates soon.")
 
