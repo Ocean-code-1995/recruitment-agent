@@ -29,7 +29,7 @@ erDiagram
         string email
         string phone_number
         string cv_file_path
-        json parsed_cv_json
+        string parsed_cv_file_path
         enum status
         datetime created_at
         datetime updated_at
@@ -99,7 +99,7 @@ Stores base applicant information and application metadata.
 | `email` | string | Unique email address |
 | `phone_number` | string | Contact number |
 | `cv_file_path` | string | Path or cloud URL to the uploaded CV |
-| `parsed_cv_json` | JSON | Extracted CV data (skills, education, etc.) |
+| `parsed_cv_file_path` | string | Path to parsed pdf file (stored as md) |
 | `status` | enum | Candidate stage (`applied`, `cv_screened`, `voice_done`, etc.) |
 | `created_at` | datetime | Application timestamp |
 | `updated_at` | datetime | Last update timestamp |
