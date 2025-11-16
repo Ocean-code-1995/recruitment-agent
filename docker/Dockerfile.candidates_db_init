@@ -1,4 +1,4 @@
-# Use a slim, modern Python base
+# --- Dockerfile.candidates_db_init ---
 FROM python:3.12-slim
 
 # Set working directory inside container
@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements/base.txt base.txt
+RUN pip install --no-cache-dir -r base.txt
 
-# Copy the rest of the project
-COPY . .
+# Copy *only* the candidate database module
+COPY src/database/candidates ./src/database/candidates
 
 # Default command (overridden by docker-compose.yml)
 CMD ["python", "-m", "src.database.candidates.client"]
