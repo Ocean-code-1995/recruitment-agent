@@ -20,3 +20,7 @@ __pycache__/
 # pycahche files everywhere
 **/__pycache__/
 **/*.pyc
+
+# data
+src/database/cvs/uploads
+src/database/cvs/parsed
