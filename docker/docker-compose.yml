@@ -1,0 +1,51 @@
+services:
+  # --- Database Service ---
+  # Runs a PostgreSQL 15 instance with persistent storage.
+  db:
+    image: postgres:15
+    container_name: agentic_hr_db
+    restart: always
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_USER: agentic_user
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: agentic_hr
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentic_user -d agentic_hr"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  candidates_db_init:
+    # --- Application Service ---
+    # Runs your Python backend inside Docker.
+    # Initializes the database or starts the API (depending on command).
+    container_name: candidates_db_init
+    build:
+      context: ..  # build from the project root
+      dockerfile: docker/Dockerfile.candidates_db_init
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: db
+    command: ["python", "-m", "src.database.candidates.client"]
+
+    volumes:
+      # --- Local code mount (for development only) ---
+      # Mounts your entire project source from the host (../)
+      # into the container at /app.
+      # ✅ Enables live code changes without rebuilding the image.
+      # ⚠️ Do NOT use in production – overrides the built image code.
+      - ../:/app  # optional: live reload for local dev
+
+
+volumes:
+  postgres_data:
