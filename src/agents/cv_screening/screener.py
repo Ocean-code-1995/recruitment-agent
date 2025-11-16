@@ -1,3 +1,11 @@
+"""CV Screening Agent Module
+
+Run as follows:
+>>> docker compose up --build
+>>> docker compose run --rm candidates_db_init python -m src.agents.cv_screening.screener
+"""
+
+
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -42,7 +50,8 @@ def evaluate_cv(cv_text: str, jd_text: str) -> CVScreeningResult:
 # --- Main execution for testing ---
 if __name__ == "__main__":
     from pathlib import Path
-    BASE_PATH = Path("/Users/sebastianwefers/Desktop/projects/recruitment-agent/src/database")
+    #BASE_PATH = Path("/Users/sebastianwefers/Desktop/projects/recruitment-agent/src/database")
+    BASE_PATH = Path(__file__).resolve().parents[2] / "database"
 
     cv_text = read_file(BASE_PATH / "cvs/parsed/c762271c-af8f-49db-acbb-e37e5f0f0f98_SWefers_CV-sections.txt")
     jd_text = read_file(BASE_PATH / "cvs/job_postings/ai_engineer.txt")
@@ -57,6 +66,3 @@ if __name__ == "__main__":
         result=result,
         job_title="AI Engineer"
     )
-
-    # when willing to write results to db, do `compose up" and then:
-    # >>> POSTGRES_HOST=localhost python -m src.agents.cv_screening.screener
