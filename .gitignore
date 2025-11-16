@@ -17,3 +17,6 @@ __pycache__/
 
 .env
 
+# pycahche files everywhere
+**/__pycache__/
+**/*.pyc
