@@ -11,7 +11,6 @@ from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage
 
 from dotenv import load_dotenv
-from src.database.candidates.models import  CVScreeningResult
 from src.agents.cv_screening.schemas.output_schema import CVScreeningOutput
 from src.agents.cv_screening.utils.read_file import read_file
 from src.agents.cv_screening.utils.db import write_results_to_db
@@ -22,14 +21,14 @@ load_dotenv()
 
 
 # --- The evaluator function ---
-def evaluate_cv(cv_text: str, jd_text: str) -> CVScreeningResult:
+def evaluate_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
     """
     Evaluate a candidate's CV against a job description using an LLM.
 
     Args:
         cv_text (str): The candidate's CV text.
         jd_text (str): The job description text.    
-        
+
     Returns:
         CVScreeningResult: The structured screening result.
     """
@@ -77,8 +76,8 @@ if __name__ == "__main__":
     print(json.dumps(result.model_dump(), indent=2))
 
     # optionally write to DB
-    #write_results_to_db(
-    #    candidate_email="sebastianwefersnz@gmail.com",
-    #    result=result,
-    #    job_title="AI Engineer"
-    #)
+    write_results_to_db(
+        candidate_email="sebastianwefersnz@gmail.com",
+        result=result,
+        job_title="AI Engineer"
+    )
