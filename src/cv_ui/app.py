@@ -64,7 +64,7 @@ if submitted:
             file_path = save_cv(uploaded_file, uploaded_file.name)
 
             # Register candidate in DB
-            register_candidate(full_name, email, phone, file_path)
+            register_candidate(full_name, email, phone, file_path, )
 
             st.success(f"✅ Application submitted successfully for {full_name}!")
             st.info("Your application has been recorded. You will receive updates soon.")
