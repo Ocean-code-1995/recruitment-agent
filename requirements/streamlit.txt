@@ -1,2 +1,6 @@
 -r base.txt
 streamlit
+openai
+pypdfium2
+Pillow
+ftfy

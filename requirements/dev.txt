@@ -9,3 +9,9 @@ pillow
 ftfy
 sqlalchemy
 psycopg2-binary
+
+python-dotenv
+openai
+pypdfium2
+Pillow
+ftfy
