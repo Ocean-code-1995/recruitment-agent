@@ -7,10 +7,6 @@ services:
     restart: always
     env_file:
       - ../.env
-    environment:
-      POSTGRES_USER: agentic_user
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: agentic_hr
     ports:
       - "5432:5432"
     volumes:
@@ -20,6 +16,8 @@ services:
       interval: 3s
       timeout: 3s
       retries: 5
+    networks:
+      - hrnet
 
   candidates_db_init:
     # --- Application Service ---
@@ -46,6 +44,37 @@ services:
       # ⚠️ Do NOT use in production – overrides the built image code.
       - ../:/app  # optional: live reload for local dev
 
+    networks:
+      - hrnet
+
+  # --- Streamlit UI ---
+  streamlit:
+    container_name: cv_upload_streamlit
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      - db
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
+      CV_UPLOAD_PATH: /app/src/database/cvs/uploads
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
+      # Shared volume for CV uploads (persistent)
+      - ../src/database/cvs:/app/src/database/cvs
+    networks:
+      - hrnet
 
 volumes:
   postgres_data:
+  cvs_data:
+    driver: local
+
+networks:
+  hrnet:
+    driver: bridge
