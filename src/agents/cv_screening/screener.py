@@ -12,8 +12,7 @@ from langchain.messages import SystemMessage, HumanMessage
 
 from dotenv import load_dotenv
 from src.agents.cv_screening.schemas.output_schema import CVScreeningOutput
-from src.agents.cv_screening.utils.read_file import read_file
-from src.agents.cv_screening.utils.db import write_results_to_db
+from src.agents.cv_screening.utils import read_file, write_results_to_db
 
 load_dotenv()
 
