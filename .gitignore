@@ -21,6 +21,16 @@ __pycache__/
 **/__pycache__/
 **/*.pyc
 
-# data
-src/database/cvs/uploads
-src/database/cvs/parsed
+
+
+# Ignore only .pdf and .txt files in uploads and parsed folders
+src/database/cvs/uploads/*.pdf
+src/database/cvs/uploads/*.txt
+src/database/cvs/parsed/*.pdf
+src/database/cvs/parsed/*.txt
+
+# Keep these files
+!src/database/cvs/uploads/.gitkeep
+!src/database/cvs/parsed/.gitkeep
+!src/database/cvs/uploads/info.md
+!src/database/cvs/parsed/info.md

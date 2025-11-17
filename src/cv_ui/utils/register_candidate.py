@@ -1,9 +1,17 @@
+from sqlalchemy.exc import IntegrityError
 from src.database.candidates.client import SessionLocal
 from src.database.candidates.models import Candidate
 from src.state.candidate import CandidateStatus
 
-def register_candidate(full_name: str, email: str, phone: str, cv_path: str) -> None:
-    """Register a new candidate in the database.
+def register_candidate(
+    full_name: str,
+    email: str,
+    phone: str,
+    cv_path: str
+) -> bool:
+    """
+    Register a new candidate in the database.
+    Returns True if successful, False if already exists.
     """
     with SessionLocal() as session:
         candidate = Candidate(
@@ -14,5 +22,11 @@ def register_candidate(full_name: str, email: str, phone: str, cv_path: str) -> 
             status=CandidateStatus.applied,
         )
         session.add(candidate)
-        session.commit()
-        print(f"✅ Candidate '{full_name}' registered successfully.")
+        try:
+            session.commit()
+            print(f"✅ Candidate '{full_name}' registered successfully.")
+            return True
+        except IntegrityError:
+            session.rollback()
+            print(f"⚠️ Candidate with email '{email}' already exists.")
+            return False
