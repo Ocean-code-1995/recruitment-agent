@@ -20,7 +20,31 @@ __pycache__/
 # pycahche files everywhere
 **/__pycache__/
 **/*.pyc
+**/.DS_Store
 
+
+# data
+src/database/cvs/uploads
+src/database/cvs/parsed
+
+
+
+# Local credentials / tokens
+.gcloud/
+.env
+.env.*
+**/credentials.json
+/results/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+*.auto.tfvars
+.override.tf
+override.tf
 
 
 # Ignore only .pdf and .txt files in uploads and parsed folders
