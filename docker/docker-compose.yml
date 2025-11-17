@@ -1,0 +1,80 @@
+services:
+  # --- Database Service ---
+  # Runs a PostgreSQL 15 instance with persistent storage.
+  db:
+    image: postgres:15
+    container_name: agentic_hr_db
+    restart: always
+    env_file:
+      - ../.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentic_user -d agentic_hr"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - hrnet
+
+  candidates_db_init:
+    # --- Application Service ---
+    # Runs your Python backend inside Docker.
+    # Initializes the database or starts the API (depending on command).
+    container_name: candidates_db_init
+    build:
+      context: ..  # build from the project root
+      dockerfile: docker/Dockerfile.candidates_db_init
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: db
+    command: ["python", "-m", "src.database.candidates.client"]
+
+    volumes:
+      # --- Local code mount (for development only) ---
+      # Mounts your entire project source from the host (../)
+      # into the container at /app.
+      # ✅ Enables live code changes without rebuilding the image.
+      # ⚠️ Do NOT use in production – overrides the built image code.
+      - ../:/app  # optional: live reload for local dev
+
+    networks:
+      - hrnet
+
+  # --- Streamlit UI ---
+  streamlit:
+    container_name: cv_upload_streamlit
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      - db
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
+      CV_UPLOAD_PATH: /app/src/database/cvs/uploads
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
+      # Shared volume for CV uploads (persistent)
+      - ../src/database/cvs:/app/src/database/cvs
+    networks:
+      - hrnet
+
+volumes:
+  postgres_data:
+  cvs_data:
+    driver: local
+
+networks:
+  hrnet:
+    driver: bridge

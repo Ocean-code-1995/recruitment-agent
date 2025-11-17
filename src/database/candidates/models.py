@@ -12,32 +12,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 import uuid
-import enum
+
+from src.state.candidate import CandidateStatus, InterviewStatus, DecisionStatus
 
 
 Base = declarative_base()
-
-
-# --- ENUM DEFINITIONS ---
-
-class CandidateStatus(str, enum.Enum):
-    applied = "applied"
-    cv_screened = "cv_screened"
-    voice_done = "voice_done"
-    interview_scheduled = "interview_scheduled"
-    decision_made = "decision_made"
-
-
-class InterviewStatus(str, enum.Enum):
-    scheduled = "scheduled"
-    completed = "completed"
-    cancelled = "cancelled"
-
-
-class DecisionType(str, enum.Enum):
-    hire = "hire"
-    reject = "reject"
-    maybe = "maybe"
 
 
 # --- TABLES ---
@@ -50,7 +29,7 @@ class Candidate(Base):
     email = Column(String, unique=True, nullable=False)
     phone_number = Column(String)
     cv_file_path = Column(String)
-    parsed_cv_json = Column(JSON)
+    parsed_cv_file_path = Column(String)
     status = Column(Enum(CandidateStatus), default=CandidateStatus.applied, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -135,7 +114,7 @@ class FinalDecision(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     candidate_id = Column(UUID(as_uuid=True), ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
     overall_score = Column(Float)
-    decision = Column(Enum(DecisionType))
+    decision = Column(Enum(DecisionStatus))
     llm_rationale = Column(Text)
     human_notes = Column(Text)
     timestamp = Column(DateTime, default=datetime.utcnow)
