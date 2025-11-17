@@ -1,13 +1,12 @@
 import os
-import uuid
 from pathlib import Path
 import streamlit as st
-from datetime import datetime
-
-from src.cv_ui.utils.register_candidate import register_candidate
-from src.cv_ui.utils.save_cv import save_cv
-from src.cv_ui.utils.pdf_to_markdown import pdf_to_markdown
-from src.cv_ui.utils.parced_cv_path import update_parsed_cv_path
+from src.cv_ui.utils import (
+    save_cv,
+    register_candidate,
+    pdf_to_markdown,
+    update_parsed_cv_path,
+)
 
 # --- Configuration ---
 UPLOAD_DIR = Path(os.getenv("CV_UPLOAD_PATH", "src/database/cvs/uploads"))
@@ -69,32 +68,40 @@ if submitted:
             file_path = Path(file_path)
 
             # 2️⃣ Register candidate
-            register_candidate(full_name, email, phone, str(file_path))
+            st.info("💾 Registering your application...")
+            success = register_candidate(full_name, email, phone, str(file_path))
 
-            # 3️⃣ Parse automatically → save in parsed/
-            st.info("🧠 Parsing your CV, please wait...")
-            pdf_to_markdown(
-                input_path=file_path,
-                output_path=PARSED_DIR,
-                model="gpt-4.1-mini",
-            )
-            # 4️⃣ Update parsed CV path in DB
-            parsed_path = PARSED_DIR / (file_path.stem + ".txt")
-            update_parsed_cv_path(email, str(parsed_path))
-        
-            st.success(f"✅ Application submitted successfully for {full_name}!")
-            st.info("Your application has been recorded. You will receive updates soon.")
-
-            with st.expander("📬 Submitted Info"):
-                st.json(
-                    {
-                        "full_name": full_name,
-                        "email": email,
-                        "phone": phone,
-                        "cv_file_path": file_path,
-                        "position": "AI Engineer",
-                    }
+            if not success:
+                st.warning(
+                    f"⚠️ An application with **{email}** already exists. "
+                    "You can only apply once — please wait for review."
                 )
+            else:
+                # 3️⃣ Parse automatically → save in parsed/
+                st.info("🧠 Parsing your CV, please wait...")
+                pdf_to_markdown(
+                    input_path=file_path,
+                    output_path=PARSED_DIR,
+                    model="gpt-4.1-mini",
+                )
+                # 4️⃣ Update parsed CV path in DB
+                parsed_path = PARSED_DIR / (file_path.stem + ".txt")
+                update_parsed_cv_path(email, str(parsed_path))
+                
+                st.success(f"✅ Application submitted successfully for {full_name}!")
+                st.info("Your application has been recorded. You will receive updates soon.")
+
+                with st.expander("📬 Submitted Info"):
+                    st.json(
+                        {
+                            "full_name": full_name,
+                            "email": email,
+                            "phone": phone,
+                            "cv_file_path": str(file_path),
+                            "position": "AI Engineer",
+                        }
+                    )
+
 
         except Exception as e:
             st.error(f"❌ Failed to save your application: {e}")
