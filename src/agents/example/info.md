@@ -2,7 +2,6 @@
 
 1. Make sure to have the follwijg installed
 ```bash
-pip install langgraph-cli
 pip install -r requriements/dev.txt
 ```
 
@@ -12,7 +11,7 @@ pip install -r requriements/dev.txt
 3. Run the following from repo root:
 ```bash
 export PYTHONPATH=./src
-langgrpah dev
+langgraph dev
 ```
 This loads the root-level `langgraph.json` and makes all agents available in LangGraph Studio.
 
