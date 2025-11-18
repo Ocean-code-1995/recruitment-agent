@@ -3,6 +3,11 @@ langgraph
 langchain
 langchain-openai
 langchain-mcp-adapters
+duckduckgo-search
+langchain-tavily
+langchain-community
+langgraph-cli
+
 mcp
 pypdfium2
 pillow

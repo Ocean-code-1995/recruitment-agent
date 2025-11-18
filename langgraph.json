@@ -1,0 +1,7 @@
+{
+    "dependencies": ["."],
+    "graphs": {
+        "agent": "agents.example.react_agent:agent"
+    }
+}
+
