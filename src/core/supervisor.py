@@ -1,25 +1,17 @@
 """
 Supervisor Agent for HR Recruitment Workflow
 
-Implements full context engineering strategy from supervisor.md with 
-LLM-DRIVEN AUTONOMOUS DECISION-MAKING:
-
-Key principles:
-1. All decisions are made by LLM reasoning, NOT hardcoded rules
-2. Supervisor has tools it can invoke; the LLM decides when/how to use them
-3. No hardcoded stage sequence - LLM autonomously chooses workflow
-4. Context engineering prevents token bloat and improves reliability
-5. Transparent tool call logging for dashboard tracing
-
-The supervisor operates as an agentic loop:
-- LLM receives candidate context and tool descriptions
-- LLM autonomously decides which tool (agent) to invoke
-- Tools provide structured results back to LLM
-- LLM reasons about results and decides what to do next
-- Loop continues until LLM signals workflow complete
+Implements full context engineering strategy from supervisor.md:
+1. Adaptive re-planning based on subagent outputs
+2. Stateless subagent handling with context injection
+3. Lightweight reflection/summary generation after each step
+4. Candidate-specific state file management
+5. Tool call logging and error tracking
+6. Memory compaction to prevent context pollution
+7. Retry logic for failures
+8. Dashboard trace generation
 
 Reference: docs/agents/supervisor.md
-Reference: https://github.com/langchain-ai/langgraph-supervisor-py/blob/main/README.md
 """
 
 import json
@@ -30,9 +22,7 @@ from pathlib import Path
 from datetime import datetime
 
 from langchain_openai import ChatOpenAI
-from langchain.messages import SystemMessage, HumanMessage, ToolMessage
-from langchain_core.messages import BaseMessage
-from langchain_core.tools import tool
+from langchain.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 
 from src.agents.cv_screening.screener import evaluate_cv
@@ -57,22 +47,12 @@ class WorkflowStage(str, Enum):
 # 2. CONTEXT ENGINEERING - MEMORY SUMMARIES
 # ============================================================================
 
-class ToolCallRecord(BaseModel):
-    """Records each tool invocation for debugging and replay"""
-    timestamp: str
-    tool_name: str
-    stage: str
-    input_args: Dict[str, Any]
-    output: Optional[str] = None
-    error: Optional[str] = None
-
-
 class StageSummary(BaseModel):
     """Compacted output from a completed stage (context engineering)"""
-    stage: str
+    stage: WorkflowStage
     timestamp: str
     success: bool
-    summary: str
+    summary: str  # High-level summary, not full output
     key_metrics: Dict[str, Any] = Field(default_factory=dict)
     error: Optional[str] = None
 
@@ -83,21 +63,59 @@ class CandidateMemoryContext(BaseModel):
     candidate_email: str
     cv_text: Optional[str] = None
     jd_text: Optional[str] = None
-    stage_summaries: List[StageSummary] = Field(default_factory=list)
-    tool_call_log: List[ToolCallRecord] = Field(default_factory=list)
-    messages: List[Dict[str, Any]] = Field(default_factory=list)
+    stage_summaries: List[StageSummary] = Field(default_factory=list)  # Compacted history
+    tool_call_log: List[Dict[str, Any]] = Field(default_factory=list)  # Tool execution history
+    human_checkpoint_required: bool = False
+    human_checkpoint_notes: Optional[str] = None
 
 
-class SubagentResult(BaseModel):
-    """Standardized output from any subagent"""
-    stage: str
-    success: bool
-    data: Dict[str, Any]
-    error: Optional[str] = None
+class WorkflowPlan(BaseModel):
+    """Represents the supervisor's workflow plan"""
+    candidate_id: str
+    current_stage: WorkflowStage = Field(default=WorkflowStage.CV_SCREENING)
+    completed_stages: List[WorkflowStage] = Field(default_factory=list)
+    pending_stages: List[WorkflowStage] = Field(
+        default_factory=lambda: [
+            WorkflowStage.VOICE_SCREENING,
+            WorkflowStage.HR_SCHEDULING,
+            WorkflowStage.DECISION,
+        ]
+    )
+    adaptive_notes: str = Field(default="")
+    retry_count: int = 0
+    max_retries: int = 2
 
 
 # ============================================================================
-# 3. AGENT INVOCATION FUNCTIONS
+# 3. SUBAGENT RESULT CONTRACTS
+# ============================================================================
+
+class SubagentResult(BaseModel):
+    """Standardized output from any subagent"""
+    stage: WorkflowStage
+    success: bool
+    data: Dict[str, Any]
+    error: Optional[str] = None
+    requires_human_review: bool = False
+
+
+# ============================================================================
+# 4. TOOL CALL LOGGING (for trace and error recovery)
+# ============================================================================
+
+class ToolCallRecord(BaseModel):
+    """Records each tool invocation for debugging and replay"""
+    timestamp: str
+    tool_name: str
+    stage: WorkflowStage
+    input_args: Dict[str, Any]
+    output: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    retry_attempt: int = 0
+
+
+# ============================================================================
+# 5. REAL CV SCREENING (only implemented agent)
 # ============================================================================
 
 def invoke_cv_screening_agent(
@@ -108,21 +126,31 @@ def invoke_cv_screening_agent(
 ) -> SubagentResult:
     """
     Invoke CV Screening Agent (REAL implementation via evaluate_cv).
+    
+    Args:
+        cv_text: Candidate's CV
+        jd_text: Job description
+        candidate_id: For logging
+        tool_log: Tool call history
+    
+    Returns:
+        SubagentResult with structured output
     """
     record = ToolCallRecord(
         timestamp=datetime.now().isoformat(),
         tool_name="cv_screening_agent",
-        stage=WorkflowStage.CV_SCREENING.value,
+        stage=WorkflowStage.CV_SCREENING,
         input_args={"candidate_id": candidate_id},
     )
     
     try:
         cv_output = evaluate_cv(cv_text, jd_text)
-        record.output = f"CV score: {cv_output.overall_fit_score:.2f}"
+        
+        record.output = cv_output.model_dump()
         tool_log.append(record)
         
         return SubagentResult(
-            stage=WorkflowStage.CV_SCREENING.value,
+            stage=WorkflowStage.CV_SCREENING,
             success=True,
             data={
                 "overall_fit_score": cv_output.overall_fit_score,
@@ -136,12 +164,16 @@ def invoke_cv_screening_agent(
         record.error = str(e)
         tool_log.append(record)
         return SubagentResult(
-            stage=WorkflowStage.CV_SCREENING.value,
+            stage=WorkflowStage.CV_SCREENING,
             success=False,
             data={},
             error=str(e),
         )
 
+
+# ============================================================================
+# 6. DUMMY SUBAGENTS (TODO: implement when ready)
+# ============================================================================
 
 def invoke_voice_screening_agent(
     candidate_id: str,
@@ -152,14 +184,14 @@ def invoke_voice_screening_agent(
     record = ToolCallRecord(
         timestamp=datetime.now().isoformat(),
         tool_name="voice_screening_agent",
-        stage=WorkflowStage.VOICE_SCREENING.value,
+        stage=WorkflowStage.VOICE_SCREENING,
         input_args={"candidate_id": candidate_id},
-        error="TODO: Voice Screening Agent not yet implemented",
+        error="Not yet implemented",
     )
     tool_log.append(record)
     
     return SubagentResult(
-        stage=WorkflowStage.VOICE_SCREENING.value,
+        stage=WorkflowStage.VOICE_SCREENING,
         success=False,
         data={},
         error="TODO: Voice Screening Agent not yet implemented",
@@ -175,14 +207,14 @@ def invoke_scheduler_agent(
     record = ToolCallRecord(
         timestamp=datetime.now().isoformat(),
         tool_name="scheduler_agent",
-        stage=WorkflowStage.HR_SCHEDULING.value,
+        stage=WorkflowStage.HR_SCHEDULING,
         input_args={"candidate_id": candidate_id},
-        error="TODO: HR Scheduling Agent not yet implemented",
+        error="Not yet implemented",
     )
     tool_log.append(record)
     
     return SubagentResult(
-        stage=WorkflowStage.HR_SCHEDULING.value,
+        stage=WorkflowStage.HR_SCHEDULING,
         success=False,
         data={},
         error="TODO: HR Scheduling Agent not yet implemented",
@@ -198,14 +230,14 @@ def invoke_decision_agent(
     record = ToolCallRecord(
         timestamp=datetime.now().isoformat(),
         tool_name="decision_agent",
-        stage=WorkflowStage.DECISION.value,
+        stage=WorkflowStage.DECISION,
         input_args={"candidate_id": candidate_id},
-        error="TODO: Decision Agent not yet implemented",
+        error="Not yet implemented",
     )
     tool_log.append(record)
     
     return SubagentResult(
-        stage=WorkflowStage.DECISION.value,
+        stage=WorkflowStage.DECISION,
         success=False,
         data={},
         error="TODO: Decision Agent not yet implemented",
@@ -213,20 +245,26 @@ def invoke_decision_agent(
 
 
 # ============================================================================
-# 4. CONTEXT ENGINEERING - REFLECTION & SUMMARY GENERATION
+# 7. CONTEXT ENGINEERING - REFLECTION & SUMMARY GENERATION
 # ============================================================================
 
-def generate_stage_summary(result: SubagentResult, agent_output: str = "") -> StageSummary:
+def generate_stage_summary(result: SubagentResult) -> StageSummary:
     """
     Generate lightweight reflection summary after subagent execution.
     This compacts the output to prevent context pollution.
+    
+    Args:
+        result: The subagent's result
+    
+    Returns:
+        StageSummary: Compacted version of the result
     """
-    if result.stage == WorkflowStage.CV_SCREENING.value:
+    if result.stage == WorkflowStage.CV_SCREENING:
         return StageSummary(
             stage=result.stage,
             timestamp=datetime.now().isoformat(),
             success=result.success,
-            summary=f"CV score: {result.data.get('overall_fit_score', 'N/A')} - {str(result.data.get('llm_feedback', 'N/A'))[:100]}...",
+            summary=f"CV score: {result.data.get('overall_fit_score', 'N/A'):.2f} - {result.data.get('llm_feedback', 'N/A')[:100]}...",
             key_metrics={
                 "overall_fit_score": result.data.get("overall_fit_score"),
                 "skills_match": result.data.get("skills_match_score"),
@@ -238,186 +276,300 @@ def generate_stage_summary(result: SubagentResult, agent_output: str = "") -> St
         stage=result.stage,
         timestamp=datetime.now().isoformat(),
         success=result.success,
-        summary=f"Stage {result.stage}: {'Success' if result.success else 'Failed'}",
+        summary=f"Stage {result.stage.value}: {'Success' if result.success else 'Failed'}",
         key_metrics=result.data,
     )
 
 
 # ============================================================================
-# 5. SUPERVISOR AGENT - MAIN ORCHESTRATOR (LLM-DRIVEN)
+# 8. SUPERVISOR AGENT - MAIN ORCHESTRATOR
 # ============================================================================
 
 class HRSupervisor:
     """
-    Supervisor Agent that orchestrates the HR recruitment workflow using LLM-driven
-    AUTONOMOUS decision-making.
+    Supervisor Agent that orchestrates the HR recruitment workflow.
     
-    All decisions are made by the LLM supervisor reasoning about candidate context,
-    not by hardcoded rules. The supervisor:
-    - Has access to tools for invoking agents
-    - Uses its own reasoning to decide which agent to invoke
-    - Processes tool results and autonomously determines next steps
-    - Decides when to retry, skip stages, or complete the workflow
-    
-    Implements context engineering to prevent token bloat and improve reliability:
-    1. Stateless subagent handling with context injection
-    2. Reflection/summary generation after each step
-    3. Candidate-specific state files
-    4. Tool call logging and tracing
-    5. Dashboard trace generation
+    Implements full context engineering strategy:
+    1. Adaptive re-planning based on subagent outputs
+    2. Stateless subagent handling with context injection
+    3. Reflection/summary generation
+    4. Candidate-specific state files
+    5. Tool call logging
+    6. Memory compaction
+    7. Retry logic
+    8. Dashboard trace generation
     """
     
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.7)
         self.temp_dir = Path(tempfile.gettempdir())
-        self.tools = self._create_agent_tools()
-        self._current_memory: Optional[CandidateMemoryContext] = None
-        # TODO: Load persistent memory summaries from database (supervisor.md Section 5)
     
     # ========================================================================
-    # 1. TOOL DEFINITIONS - Tools the LLM supervisor can invoke
+    # 1. PLAN INITIALIZATION
     # ========================================================================
     
-    def _create_agent_tools(self) -> List:
-        """Create tools that the supervisor LLM can autonomously invoke"""
+    def initialize_plan(
+        self,
+        candidate_id: str,
+        candidate_email: str,
+        cv_text: str,
+        jd_text: str,
+    ) -> tuple[WorkflowPlan, CandidateMemoryContext]:
+        """
+        Initialize workflow plan for a candidate.
         
-        @tool
-        def run_cv_screening(candidate_id: str, cv_text: str, jd_text: str) -> str:
-            """
-            Run CV Screening Agent to evaluate candidate's CV against job description.
-            The agent analyzes skills match, experience, education alignment and overall fit.
-            Returns a detailed scoring report.
-            """
-            if self._current_memory is None:
-                return "ERROR: Memory context not initialized"
-            
-            result = invoke_cv_screening_agent(
-                cv_text,
-                jd_text,
-                candidate_id,
-                self._current_memory.tool_call_log,
+        Args:
+            candidate_id: Unique candidate identifier
+            candidate_email: Candidate email
+            cv_text: Candidate's CV
+            jd_text: Job description
+        
+        Returns:
+            Tuple of (WorkflowPlan, CandidateMemoryContext)
+        """
+        plan = WorkflowPlan(
+            candidate_id=candidate_id,
+            current_stage=WorkflowStage.CV_SCREENING,
+        )
+        
+        memory = CandidateMemoryContext(
+            candidate_id=candidate_id,
+            candidate_email=candidate_email,
+            cv_text=cv_text,
+            jd_text=jd_text,
+        )
+        
+        return plan, memory
+    
+    # ========================================================================
+    # 2. EXECUTE NEXT STAGE (with context injection)
+    # ========================================================================
+    
+    def execute_next_stage(
+        self,
+        plan: WorkflowPlan,
+        memory: CandidateMemoryContext,
+    ) -> SubagentResult:
+        """
+        Execute the next stage in the workflow.
+        Injects only relevant context to the subagent (stateless approach).
+        
+        Args:
+            plan: Current workflow plan
+            memory: Candidate memory context
+        
+        Returns:
+            SubagentResult from the executed stage
+        """
+        stage = plan.current_stage
+        
+        if stage == WorkflowStage.CV_SCREENING:
+            return invoke_cv_screening_agent(
+                memory.cv_text,
+                memory.jd_text,
+                memory.candidate_id,
+                memory.tool_call_log,
             )
+        elif stage == WorkflowStage.VOICE_SCREENING:
+            return invoke_voice_screening_agent(
+                memory.candidate_id,
+                memory.candidate_email,
+                memory.tool_call_log,
+            )
+        elif stage == WorkflowStage.HR_SCHEDULING:
+            return invoke_scheduler_agent(
+                memory.candidate_id,
+                memory.candidate_email,
+                memory.tool_call_log,
+            )
+        elif stage == WorkflowStage.DECISION:
+            return invoke_decision_agent(
+                memory.candidate_id,
+                memory,
+                memory.tool_call_log,
+            )
+        else:
+            return SubagentResult(
+                stage=stage,
+                success=False,
+                data={},
+                error=f"Unknown stage: {stage}",
+            )
+    
+    # ========================================================================
+    # 3. REFLECT & GENERATE SUMMARY (context engineering)
+    # ========================================================================
+    
+    def reflect_and_summarize(
+        self,
+        result: SubagentResult,
+        memory: CandidateMemoryContext,
+    ) -> str:
+        """
+        Perform lightweight reflection after subagent execution.
+        Generates summary to prevent context pollution.
+        
+        Args:
+            result: The subagent result
+            memory: Candidate memory context
+        
+        Returns:
+            Reflection text for adaptive planning
+        """
+        summary = generate_stage_summary(result)
+        memory.stage_summaries.append(summary)
+        
+        reflection = (
+            f"Stage {result.stage.value} completed: {'SUCCESS' if result.success else 'FAILED'}\n"
+            f"Summary: {summary.summary}\n"
+        )
+        
+        if result.error:
+            reflection += f"Error: {result.error}\n"
+        
+        return reflection
+    
+    # ========================================================================
+    # 4. ADAPTIVE RE-PLANNING
+    # ========================================================================
+    
+    def adapt_plan(
+        self,
+        plan: WorkflowPlan,
+        result: SubagentResult,
+        reflection: str,
+    ) -> None:
+        """
+        Adaptively update the workflow plan based on subagent results.
+        Implements decision rules from supervisor.md.
+        
+        Args:
+            plan: Current workflow plan
+            result: SubagentResult from the executed stage
+            reflection: Reflection text
+        """
+        plan.completed_stages.append(result.stage)
+        
+        if result.stage == WorkflowStage.CV_SCREENING:
+            cv_score = result.data.get("overall_fit_score", 0)
             
-            # Reflect and summarize
-            summary = generate_stage_summary(result)
-            self._current_memory.stage_summaries.append(summary)
-            
-            if result.success:
-                output = (
-                    f"✓ CV Screening Complete\n"
-                    f"  Overall Fit Score: {result.data.get('overall_fit_score', 'N/A')}\n"
-                    f"  Skills Match: {result.data.get('skills_match_score', 'N/A')}\n"
-                    f"  Experience Match: {result.data.get('experience_match_score', 'N/A')}\n"
-                    f"  Education Match: {result.data.get('education_match_score', 'N/A')}\n"
-                    f"  Feedback: {result.data.get('llm_feedback', 'N/A')}"
-                )
+            if cv_score < 0.4:
+                # Low score: skip voice/scheduling, go to rejection
+                plan.pending_stages = [WorkflowStage.DECISION]
+                plan.adaptive_notes += f"\nCV score {cv_score:.2f} too low - skipping voice and scheduling"
+            elif cv_score < 0.6:
+                # Marginal score: skip voice screening
+                if WorkflowStage.VOICE_SCREENING in plan.pending_stages:
+                    plan.pending_stages.remove(WorkflowStage.VOICE_SCREENING)
+                plan.adaptive_notes += f"\nCV score {cv_score:.2f} marginal - skipping voice screening"
             else:
-                output = f"✗ CV Screening Failed: {result.error}"
-            
-            return output
+                # Strong score: proceed normally
+                plan.adaptive_notes += f"\nCV score {cv_score:.2f} strong - proceeding to voice screening"
         
-        @tool
-        def run_voice_screening(candidate_id: str, candidate_email: str) -> str:
-            """
-            Run Voice Screening Agent to conduct phone interview evaluation.
-            TODO: Not yet implemented. Will evaluate communication skills and cultural fit.
-            """
-            if self._current_memory is None:
-                return "ERROR: Memory context not initialized"
-            
-            result = invoke_voice_screening_agent(
-                candidate_id,
-                candidate_email,
-                self._current_memory.tool_call_log,
-            )
-            
-            summary = generate_stage_summary(result)
-            self._current_memory.stage_summaries.append(summary)
-            
-            return f"⚠️ TODO: Voice Screening Agent is not yet implemented. This agent is unavailable. Continue the workflow without this step based on available information."
+        elif result.stage == WorkflowStage.VOICE_SCREENING:
+            if not result.success:
+                plan.adaptive_notes += "\nVoice screening failed - manual review recommended"
+                plan.human_checkpoint_required = True
         
-        @tool
-        def run_hr_scheduling(candidate_id: str, candidate_email: str) -> str:
-            """
-            Run HR Scheduling Agent to schedule final interview with HR team.
-            TODO: Not yet implemented. Will coordinate calendar availability.
-            """
-            if self._current_memory is None:
-                return "ERROR: Memory context not initialized"
-            
-            result = invoke_scheduler_agent(
-                candidate_id,
-                candidate_email,
-                self._current_memory.tool_call_log,
-            )
-            
-            summary = generate_stage_summary(result)
-            self._current_memory.stage_summaries.append(summary)
-            
-            return f"⚠️ TODO: HR Scheduling Agent is not yet implemented. This agent is unavailable. Continue the workflow without this step based on available information."
+        elif result.stage == WorkflowStage.HR_SCHEDULING:
+            if not result.success:
+                plan.adaptive_notes += "\nScheduling constraints detected - alternative times needed"
+                plan.human_checkpoint_required = True
         
-        @tool
-        def run_decision_agent(candidate_id: str) -> str:
-            """
-            Run Decision Agent to make final hiring decision based on all previous evaluations.
-            TODO: Not yet implemented. Will aggregate all stage results into hiring recommendation.
-            """
-            if self._current_memory is None:
-                return "ERROR: Memory context not initialized"
-            
-            result = invoke_decision_agent(
-                candidate_id,
-                self._current_memory,
-                self._current_memory.tool_call_log,
-            )
-            
-            summary = generate_stage_summary(result)
-            self._current_memory.stage_summaries.append(summary)
-            
-            return f"⚠️ TODO: Decision Agent is not yet implemented. This agent is unavailable. Make your own hiring decision based on all gathered information, or continue the workflow as you see fit."
-        
-        @tool
-        def complete_workflow(candidate_id: str, decision: str) -> str:
-            """
-            Complete the workflow and finalize the hiring decision.
-            
-            Args:
-                candidate_id: The candidate's ID
-                decision: Final decision (e.g., "HIRE", "REJECT", "HOLD_FOR_REVIEW")
-            
-            Returns:
-                Confirmation message
-            """
-            return f"Workflow completed for {candidate_id} with decision: {decision}"
-        
-        return [
-            run_cv_screening,
-            run_voice_screening,
-            run_hr_scheduling,
-            run_decision_agent,
-            complete_workflow,
-        ]
+        # Move to next stage
+        if plan.pending_stages:
+            plan.current_stage = plan.pending_stages[0]
+        else:
+            plan.current_stage = WorkflowStage.COMPLETE
     
     # ========================================================================
-    # 2. CANDIDATE STATE PERSISTENCE
+    # 5. RETRY LOGIC (error handling)
     # ========================================================================
     
-    def save_candidate_state(self, memory: CandidateMemoryContext) -> Path:
-        """Save candidate-specific state to temporary file"""
-        state_file = self.temp_dir / f"candidate_{memory.candidate_id}_state.json"
-        state_file.write_text(json.dumps(json.loads(memory.model_dump_json()), indent=2))
+    def should_retry(self, plan: WorkflowPlan, result: SubagentResult) -> bool:
+        """
+        Determine if a failed stage should be retried.
+        
+        Args:
+            plan: Current workflow plan
+            result: SubagentResult
+        
+        Returns:
+            True if should retry, False otherwise
+        """
+        if result.success:
+            return False
+        
+        if plan.retry_count >= plan.max_retries:
+            return False
+        
+        # Retry transient errors (e.g., tool failures)
+        if "TODO" in result.error or "not yet implemented" in result.error:
+            return False  # Don't retry unimplemented features
+        
+        return True
+    
+    # ========================================================================
+    # 6. CANDIDATE STATE PERSISTENCE (TODO format)
+    # ========================================================================
+    
+    def save_candidate_state(
+        self,
+        plan: WorkflowPlan,
+        memory: CandidateMemoryContext,
+    ) -> Path:
+        """
+        Save candidate-specific state to temporary file.
+        
+        Args:
+            plan: Current workflow plan
+            memory: Candidate memory context
+        
+        Returns:
+            Path to state file
+        """
+        state_file = self.temp_dir / f"candidate_{plan.candidate_id}_state.json"
+        
+        state_data = {
+            "plan": plan.model_dump(),
+            "memory": memory.model_dump(),
+        }
+        
+        state_file.write_text(json.dumps(state_data, indent=2, default=str))
         return state_file
     
+    def load_candidate_state(
+        self,
+        candidate_id: str,
+    ) -> Optional[tuple[WorkflowPlan, CandidateMemoryContext]]:
+        """
+        Load candidate-specific state from file.
+        
+        Args:
+            candidate_id: Candidate identifier
+        
+        Returns:
+            Tuple of (plan, memory) or None if not found
+        """
+        state_file = self.temp_dir / f"candidate_{candidate_id}_state.json"
+        
+        if not state_file.exists():
+            return None
+        
+        state_data = json.loads(state_file.read_text())
+        plan = WorkflowPlan(**state_data["plan"])
+        memory = CandidateMemoryContext(**state_data["memory"])
+        
+        return plan, memory
+    
     def cleanup_candidate_state(self, candidate_id: str) -> None:
-        """Delete candidate state file when hiring decision is made"""
-        # TODO: Implement multi-applicant context switching (supervisor.md Section 5)
-        # Load/unload context from applicant-specific memory when handling concurrent candidates
+        """Delete candidate state file (called when hiring decision made)."""
         state_file = self.temp_dir / f"candidate_{candidate_id}_state.json"
         if state_file.exists():
             state_file.unlink()
     
     # ========================================================================
-    # 3. MAIN WORKFLOW EXECUTOR - LLM-DRIVEN AUTONOMOUS LOOP
+    # 7. MAIN WORKFLOW EXECUTOR
     # ========================================================================
     
     def run_workflow(
@@ -428,16 +580,7 @@ class HRSupervisor:
         jd_text: str,
     ) -> Dict[str, Any]:
         """
-        Execute complete workflow for a candidate using LLM-driven AUTONOMOUS decision-making.
-        
-        The supervisor LLM autonomously decides:
-        - Which agent to run first
-        - Based on results, which agent to run next
-        - Whether to retry failed stages
-        - Whether to skip stages
-        - When the workflow is complete
-        
-        NO HARDCODED LOGIC WHATSOEVER - all decisions are made by LLM reasoning.
+        Execute complete workflow for a candidate.
         
         Args:
             candidate_id: Unique candidate ID
@@ -448,177 +591,54 @@ class HRSupervisor:
         Returns:
             Dictionary with final results and traces
         """
-        print(f"    [1/4] Initializing workflow for {candidate_id}...")
-        
-        # TODO: Load candidate context from database (supervisor.md Section 5)
-        # Load past runs and memory summaries for this candidate if they exist
-        
-        # Initialize memory
-        memory = CandidateMemoryContext(
-            candidate_id=candidate_id,
-            candidate_email=candidate_email,
-            cv_text=cv_text,
-            jd_text=jd_text,
+        plan, memory = self.initialize_plan(
+            candidate_id,
+            candidate_email,
+            cv_text,
+            jd_text,
         )
         
-        # TODO: Initialize default plan (supervisor.md Section 2)
-        # Build initial sequence: CV Screening → Voice Screening → HR Interview Scheduling → Decision
-        # LLM can still deviate autonomously, but this provides a starting template
-        
-        # Store reference for tools to access
-        self._current_memory = memory
-        
-        print(f"    ✓ Memory initialized")
-        
-        # Build initial system prompt for supervisor LLM
-        # This is where ALL the decision logic lives now - in the LLM's reasoning
-        system_prompt = f"""You are an autonomous HR Recruitment Supervisor Agent.
-
-YOUR GOAL:
-Conduct a thorough recruitment evaluation of candidate {candidate_id} and make a hiring decision
-(HIRE, REJECT, or HOLD_FOR_REVIEW). You must evaluate the candidate fairly and comprehensively
-using available information.
-
-YOUR AUTONOMY:
-You have COMPLETE autonomy over HOW you achieve this goal:
-- Which agents to invoke and in what order
-- Whether to retry agents that fail
-- Whether to skip unavailable agents and compensate with available data
-- How to interpret agent outputs
-- When you have sufficient information to make a decision
-
-You do NOT have autonomy over the GOAL itself - you must make a hiring decision.
-There are NO hardcoded rules dictating your workflow - you decide everything.
-
-AVAILABLE TOOLS:
-1. run_cv_screening - Evaluates candidate's CV vs job description (✓ IMPLEMENTED)
-2. run_voice_screening - TODO: Phone interview evaluation (⚠️ NOT AVAILABLE)
-3. run_hr_scheduling - TODO: Schedule final interview (⚠️ NOT AVAILABLE)
-4. run_decision_agent - TODO: Aggregates data into recommendation (⚠️ NOT AVAILABLE)
-5. complete_workflow - End workflow with your hiring decision (✓ USE THIS TO FINISH)
-
-CANDIDATE INFORMATION:
-- ID: {candidate_id}
-- Email: {candidate_email}
-- CV and Job Description: Available through run_cv_screening tool
-
-WORKFLOW APPROACH:
-1. Start with run_cv_screening to evaluate the CV against job description
-2. Interpret the CV screening results
-3. If unavailable agents are needed, work around them or make decisions based on available data
-4. When you have sufficient information, use complete_workflow with your decision
-
-IMPORTANT NOTES:
-- When tools return "TODO: Not yet implemented", this agent is genuinely unavailable
-- Adapt your approach - you can make decisions based on CV data alone if needed
-- Be thorough but efficient
-- Make reasonable hiring decisions with the information you have
-- Use complete_workflow to end the process with HIRE, REJECT, or HOLD_FOR_REVIEW
-
-Begin the recruitment workflow for {candidate_id}. Use your autonomous judgment."""
-        
-        print(f"    [2/4] Starting LLM-driven workflow loop...")
-        
-        messages: List[BaseMessage] = [SystemMessage(content=system_prompt)]
-        
-        # Add initial human message to start the workflow
-        messages.append(
-            HumanMessage(
-                content=f"Evaluate candidate {candidate_id} and make a hiring decision. "
-                f"Use your available tools as needed, and make your own decisions about "
-                f"workflow progression. End with complete_workflow and your final decision."
-            )
-        )
-        
-        # Agentic loop - LLM makes all decisions
-        max_iterations = 15
-        iteration = 0
-        
-        while iteration < max_iterations:
-            iteration += 1
-            print(f"\n    [Iteration {iteration}/{max_iterations}] Running supervisor LLM...")
+        while plan.current_stage != WorkflowStage.COMPLETE:
+            # Execute stage
+            result = self.execute_next_stage(plan, memory)
             
-            # Bind tools to model
-            model_with_tools = self.model.bind_tools(self.tools)
+            # Reflect and summarize
+            reflection = self.reflect_and_summarize(result, memory)
             
-            # Get response from LLM
-            response = model_with_tools.invoke(messages)
-            print(f"      ✓ LLM responded")
+            # Adaptive re-planning
+            self.adapt_plan(plan, result, reflection)
             
-            # Add response to message history
-            messages.append(response)
-            memory.messages.append({"role": "assistant", "content": str(response)})
+            # Retry if needed
+            if self.should_retry(plan, result):
+                plan.retry_count += 1
+                continue
             
-            # Check if LLM is done (no tool calls)
-            if not hasattr(response, "tool_calls") or not response.tool_calls:
-                print(f"      → LLM finished (no more tool calls)")
-                break
-            
-            # Process each tool call (LLM's autonomous decisions)
-            for tool_call in response.tool_calls:
-                tool_name = tool_call["name"]
-                tool_args = tool_call["args"]
-                tool_id = tool_call["id"]
-                
-                print(f"      → LLM invoked tool: {tool_name}")
-                
-                # Find and execute the tool
-                tool_result = None
-                for tool in self.tools:
-                    if tool.name == tool_name:
-                        try:
-                            tool_result = tool.invoke(tool_args)
-                            print(f"        ✓ Tool executed")
-                        except Exception as e:
-                            tool_result = f"ERROR: {str(e)}"
-                            print(f"        ✗ Tool error: {tool_result}")
-                        break
-                
-                if tool_result is None:
-                    tool_result = f"ERROR: Tool {tool_name} not found"
-                
-                # Add tool result to messages
-                tool_message = ToolMessage(
-                    content=tool_result,
-                    tool_call_id=tool_id,
-                    name=tool_name,
-                )
-                messages.append(tool_message)
-                memory.messages.append(
-                    {"role": "tool", "content": tool_result, "name": tool_name}
-                )
-                
-                # Check if workflow is complete
-                if tool_name == "complete_workflow":
-                    print(f"      → LLM completed workflow")
-                    iteration = max_iterations  # Break outer loop
-                    break
+            # Save state
+            self.save_candidate_state(plan, memory)
         
-        print(f"\n    [3/4] Generating final trace...")
-        trace = self.get_reasoning_trace(memory)
-        print(f"    ✓ Trace generated")
+        # Generate final trace
+        trace = self.get_reasoning_trace(plan, memory)
         
-        print(f"    [4/4] Finalizing workflow...")
-        # Save final state
-        self.save_candidate_state(memory)
-        
-        # TODO: Delete candidate state file only when hiring decision is finalized (supervisor.md Section 5)
-        # Conditionally cleanup based on whether a final decision (HIRE/REJECT) was made, not unconditionally
-        # self.cleanup_candidate_state(candidate_id)
-        print(f"    ✓ Workflow finalized")
+        # Cleanup state file
+        self.cleanup_candidate_state(candidate_id)
         
         return trace
     
     # ========================================================================
-    # 4. DASHBOARD TRACE GENERATION
+    # 8. DASHBOARD TRACE GENERATION
     # ========================================================================
     
-    def get_reasoning_trace(self, memory: CandidateMemoryContext) -> Dict[str, Any]:
+    def get_reasoning_trace(
+        self,
+        plan: WorkflowPlan,
+        memory: CandidateMemoryContext,
+    ) -> Dict[str, Any]:
         """
         Generate structured trace for dashboard visualization.
-        Includes memory summaries, tool logs, and LLM reasoning.
+        Includes plan state, memory summaries, tool logs, and reasoning.
         
         Args:
+            plan: Current workflow plan
             memory: Candidate memory context
         
         Returns:
@@ -626,12 +646,31 @@ Begin the recruitment workflow for {candidate_id}. Use your autonomous judgment.
         """
         return {
             "candidate_id": memory.candidate_id,
-            "workflow_summary": {
-                "total_stages_run": len(memory.stage_summaries),
-                "successful_stages": sum(1 for s in memory.stage_summaries if s.success),
-                "failed_stages": sum(1 for s in memory.stage_summaries if not s.success),
+            "plan": {
+                "current_stage": plan.current_stage.value,
+                "completed_stages": [s.value for s in plan.completed_stages],
+                "pending_stages": [s.value for s in plan.pending_stages],
             },
-            "stage_summaries": [s.model_dump() for s in memory.stage_summaries],
-            "tool_calls": [tc.model_dump() for tc in memory.tool_call_log],
-            "conversation_history": memory.messages,
+            "memory_summaries": [
+                {
+                    "stage": s.stage.value,
+                    "timestamp": s.timestamp,
+                    "success": s.success,
+                    "summary": s.summary,
+                    "key_metrics": s.key_metrics,
+                }
+                for s in memory.stage_summaries
+            ],
+            "tool_calls": [
+                {
+                    "timestamp": tc.timestamp,
+                    "tool_name": tc.tool_name,
+                    "stage": tc.stage.value,
+                    "error": tc.error,
+                }
+                for tc in memory.tool_call_log
+            ],
+            "adaptive_notes": plan.adaptive_notes,
+            "human_checkpoint_required": plan.human_checkpoint_required,
+            "human_checkpoint_notes": plan.human_checkpoint_notes,
         }
