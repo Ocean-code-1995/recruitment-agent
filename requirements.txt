@@ -1,0 +1,13 @@
+sqlalchemy
+psycopg2-binary
+pydantic
+pydantic-settings
+python-dotenv
+langchain
+langchain-openai
+google-auth
+langgraph
+langgraph-supervisor
+langchain-mcp-adapters
+mcp
+openai
