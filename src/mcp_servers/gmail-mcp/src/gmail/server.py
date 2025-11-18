@@ -1010,7 +1010,7 @@ async def main(creds_file_path: str,
                         role="user",
                         content=types.TextContent(
                             type="text",
-                            text=f"""Please draft an email about {content} for {recipient} ({recipient_email}).
+                            text=f"""Please draft an email about "{content}" for {recipient} ({recipient_email}).
                             Include a subject line starting with 'Subject:' on the first line.
                             Do not send the email yet, just draft it and ask the user for their thoughts."""
                         )
@@ -1030,10 +1030,10 @@ async def main(creds_file_path: str,
                         content=types.TextContent(
                             type="text",
                             text=f"""Please revise the current email draft:
-                            {current_draft}
+                            "{current_draft}"
                             
                             Requested changes:
-                            {changes}
+                            "{changes}"
                             
                             Please provide the updated draft."""
                         )
@@ -1051,7 +1051,7 @@ async def main(creds_file_path: str,
                         role="user",
                         content=types.TextContent(
                             type="text",
-                            text=f"""I need help with managing my email labels. Specifically, I want to {action}.
+                            text=f"""I need help with managing my email labels: I want to "{action}".
 
 Here are the tools you can use for label management:
 - list-labels: Lists all existing labels in my Gmail account
@@ -1062,7 +1062,7 @@ Here are the tools you can use for label management:
 - delete-label: Permanently deletes a label
 - search-by-label: Finds all emails with a specific label
 
-Please help me {action} by using the appropriate tools. If you need to list labels first to get label IDs, please do so."""
+If you need to list labels first to get label IDs, please do so."""
                         )
                     )
                 ]
@@ -1078,7 +1078,7 @@ Please help me {action} by using the appropriate tools. If you need to list labe
                         role="user",
                         content=types.TextContent(
                             type="text",
-                            text=f"""I need help with managing my email filters. Specifically, I want to {action}.
+                            text=f"""I need help with managing my email filters: I want to "{action}".
 
 Here are the tools you can use for filter management:
 - list-filters: Lists all existing filters in my Gmail account
@@ -1086,7 +1086,7 @@ Here are the tools you can use for filter management:
 - create-filter: Creates a new filter
 - delete-filter: Deletes a specific filter
 
-Please help me {action} by using the appropriate tools. If you need to list filters first to get filter IDs, please do so."""
+If you need to list filters first to get filter IDs, please do so."""
                         )
                     )
                 ]
@@ -1102,13 +1102,13 @@ Please help me {action} by using the appropriate tools. If you need to list filt
                         role="user",
                         content=types.TextContent(
                             type="text",
-                            text=f"""I need to search through my emails for: {query}
+                            text=f"""I need to search through my emails for: "{query}"
 
-Here are the tools you can use for searching emails:
+Available tools:
 - search-emails: Searches all emails using Gmail's search syntax
 - get-unread-emails: Gets only unread emails from the inbox
 
-Please help me find emails matching my search criteria. You can use Gmail's search syntax for advanced searches:
+You can use Gmail's search syntax for advanced searches:
 - from:sender - Emails from a specific sender
 - to:recipient - Emails to a specific recipient
 - subject:text - Emails with specific text in the subject
@@ -1116,9 +1116,7 @@ Please help me find emails matching my search criteria. You can use Gmail's sear
 - after:YYYY/MM/DD - Emails after a specific date
 - before:YYYY/MM/DD - Emails before a specific date
 - is:important - Important emails
-- label:name - Emails with a specific label
-
-Please search for emails matching: {query}"""
+- label:name - Emails with a specific label"""
                         )
                     )
                 ]
@@ -1134,16 +1132,17 @@ Please search for emails matching: {query}"""
                         role="user",
                         content=types.TextContent(
                             type="text",
-                            text=f"""I need help with managing my email folders. Specifically, I want to {action}.
+                            text=f"""I need help with managing my email folders. Specifically, I want to "{action}".
 
 Here are the tools you can use for folder management:
 - list-folders: Lists all existing folders in my Gmail account
 - create-folder: Creates a new folder with a specified name
 - move-to-folder: Moves an email to a specific folder (removes it from inbox)
 
-Please help me {action} by using the appropriate tools. If you need to list folders first to get folder IDs, please do so.
+If you need to list folders first to get folder IDs, please do so.
 
-Note: In Gmail, folders are implemented as labels with special handling. When you move an email to a folder, it applies the folder's label and removes the email from the inbox."""
+In Gmail, folders are implemented as labels with special handling. When you move an email to a folder,
+it applies the folder's label and removes the email from the inbox."""
                         )
                     )
                 ]
@@ -1159,7 +1158,7 @@ Note: In Gmail, folders are implemented as labels with special handling. When yo
                         role="user",
                         content=types.TextContent(
                             type="text",
-                            text=f"""I need help with managing my email archives. Specifically, I want to {action}.
+                            text=f"""I need help with managing my email archives: I want to "{action}".
 
 Here are the tools you can use for archive management:
 - archive-email: Archives a single email (removes from inbox without deleting)
@@ -1167,16 +1166,15 @@ Here are the tools you can use for archive management:
 - list-archived: Lists emails that have been archived
 - restore-to-inbox: Restores an archived email back to the inbox
 
-Please help me {action} by using the appropriate tools.
-
-For batch archiving, you can use Gmail's search syntax to find emails to archive:
+You can use Gmail's search syntax to find emails to archive:
 - from:sender - Emails from a specific sender
 - older_than:30d - Emails older than 30 days
 - has:attachment - Emails with attachments
 - subject:text - Emails with specific text in the subject
 - before:YYYY/MM/DD - Emails before a specific date
 
-Note: Archiving in Gmail means removing the email from your inbox while keeping it accessible in "All Mail". It's a great way to declutter your inbox without losing any emails."""
+Archiving in Gmail means removing the email from your inbox while keeping it accessible in "All Mail".
+It's a great way to declutter your inbox without losing any emails."""
                         )
                     )
                 ]
