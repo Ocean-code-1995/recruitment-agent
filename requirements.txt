@@ -18,6 +18,8 @@ psycopg2-binary
 pydantic
 pydantic-settings
 python-dotenv
+
+langgraph-supervisor
 openai
 pypdfium2
 Pillow
