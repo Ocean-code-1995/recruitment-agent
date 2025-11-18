@@ -1,8 +1,8 @@
 ### How to Run the LangGraph Reasoning Monitoring Demo Agent
 
-1. Make sure to have the following installed
+1. Make sure to have the follwijg installed
 ```bash
-pip install -r requirements/dev.txt
+pip install -r requriements/dev.txt
 ```
 
 2. Set TAVILY_API_KEY:
