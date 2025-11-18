@@ -70,6 +70,27 @@ services:
     networks:
       - hrnet
 
+  # --- Voice Screening API ---
+  voice_api:
+    container_name: voice_screening_api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.voice_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: db
+      DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
+    networks:
+      - hrnet
+
 volumes:
   postgres_data:
   cvs_data:
