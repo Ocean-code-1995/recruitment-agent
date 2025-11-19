@@ -1,179 +1,275 @@
-# 🎙️ ***`Voice Screening Agent`***
+# Voice Screening MVP
 
+## Overview
 
-#### Overview
-The **Voice Screening Agent** conducts automated phone interviews and integrates with the **LangGraph HR Orchestrator**.  
-It uses a **hybrid architecture** combining:
-- **FastAPI server**: Handles Twilio webhooks and real-time audio streaming
-- **LangGraph agent**: Manages conversation logic and post-call analysis
-- **Twilio**: Initiates and streams live phone calls
-- **OpenAI Realtime API**: Handles speech-to-text transcription
-- **Twilio TTS**: Converts agent responses to speech using native `<Say>` instructions
+The **Voice Screening MVP** provides a simple browser-based voice interview interface using Streamlit and OpenAI Realtime API. This is a simplified implementation that removes the complexity of LangGraph agents, Twilio telephony, and FastAPI servers.
 
----
+## Architecture
 
-#### Architecture Components
+**Simple MVP Architecture:**
+- **Streamlit UI**: Web interface with toggle recording button
+- **WebSocket Proxy**: FastAPI proxy for browser WebSocket authentication
+- **OpenAI Realtime API**: Real-time speech-to-speech via WebSocket
+- **Real-time transcription**: Live transcript display
+- **Real-time TTS**: Audio playback in browser with sequential queue
+- **Simple backend**: Post-session analysis and database storage
+
+## Components
+
 | Component | Purpose |
 |------------|----------|
-| **Twilio** | Initiates outbound calls and streams live audio via Media Streams |
-| **OpenAI Realtime API** | Converts candidate speech → text in real-time via WebSocket |
-| **LangGraph Voice Agent** | Manages interview flow, question generation, and conversation logic |
-| **Twilio TTS (`<Say>`)** | Converts agent text responses → spoken audio |
-| **FastAPI Server** | Handles webhooks, media streams, and orchestrates real-time audio flow |
-| **HR Orchestrator** | Triggers the voice interview via tool call and collects results |
+| **Streamlit UI** | Main interface with interview controls and transcript display |
+| **HTML/JavaScript Component** | WebSocket connection via proxy, audio recording/playback with queue |
+| **WebSocket Proxy** | FastAPI service to handle OpenAI authentication (browsers can't set custom headers) |
+| **OpenAI Realtime API** | Handles speech-to-text and text-to-speech in real-time (gpt-4o-mini-realtime-preview) |
+| **Analysis Function** | Simple GPT-4 analysis of transcript (no LangGraph) |
+| **Database Utilities** | Save results to database |
 
-***links:***
-- https://platform.openai.com/docs/guides/realtime
-- https://www.twilio.com/docs/voice/twiml/stream
-- https://www.twilio.com/docs/voice/twiml/say
-- https://docs.langchain.com/oss/python/langgraph/overview
+## Flow
 
----
-
-#### Flow
 ```text
-Supervisor Agent → start_voice_screening_tool(candidate_id, phone_number)
+User clicks "Start Interview"
 ↓
-Voice Agent → initiate_outbound_call() via Twilio API
+Browser opens WebSocket to WebSocket Proxy
 ↓
-Twilio → Calls candidate's phone number
+Proxy forwards connection to OpenAI Realtime API with authentication
 ↓
-Twilio → POST /voice/webhook (call status)
+Agent greets candidate (first TTS response)
 ↓
-FastAPI → Starts Media Stream → POST /voice/media
+User clicks mic button to start recording (toggle on)
 ↓
-Audio Flow: Candidate ↔ Twilio Media Stream ↔ FastAPI ↔ OpenAI Realtime API (WebSocket)
+Browser streams audio chunks to OpenAI via proxy
 ↓
-OpenAI Realtime API → Returns transcriptions
+OpenAI returns transcriptions + TTS audio in real-time
 ↓
-FastAPI → Calls Voice Agent conversation logic
+Audio chunks queued and played sequentially in browser
 ↓
-Voice Agent → Generates next question/prompt
+Transcript shown live in Streamlit UI
 ↓
-FastAPI → Converts to TwiML <Say> → Twilio speaks to candidate
+User clicks mic button again to stop and send (toggle off)
 ↓
-[Call Ends]
+Audio buffer committed to OpenAI
 ↓
-FastAPI → Triggers Voice Agent analyze_call node
+User clicks "End Interview"
 ↓
-Voice Agent → LLM evaluates transcript (sentiment, confidence, communication)
+Send transcript to backend for analysis
 ↓
-Voice Agent → Updates database with results
+GPT-4 analyzes transcript (sentiment, confidence, communication)
 ↓
-Candidate status → Updated to 'voice_done'
+Results saved to database
 ```
 
-#### API Endpoints
+## Implementation Details
 
-**FastAPI Server** (`src/voice_screening_ui/server.py`):
+### Streamlit UI (`src/voice_screening_ui/app.py`)
 
-- **`POST /voice/webhook`**: Twilio status callbacks
-  - Handles call events: `ringing`, `in-progress`, `completed`
-  - Generates TwiML responses for call setup
-  - Manages Media Stream initiation
+**Features:**
+- "Start Interview" button to initialize session
+- Toggle microphone button (click to start, click again to stop and send)
+- Live transcript display area
+- Session controls (end interview)
+- Analysis and results display
+- Database integration
+- Debug panel for connection and audio troubleshooting
 
-- **`POST /voice/media`**: Twilio Media Streams webhook
-  - Receives real-time audio chunks from Twilio
-  - Forwards audio to OpenAI Realtime API
-  - Processes transcriptions and agent responses
+**Session State:**
+- `session_id`: Unique session identifier
+- `transcript`: List of transcript entries
+- `is_interview_active`: Boolean flag for active session
+- `candidate_id`: Candidate UUID
 
-- **`POST /voice/start`**: Internal endpoint to initiate calls
-  - Called by voice agent to start screening
-  - Accepts JSON: `{"candidate_id": "...", "phone_number": "..."}`
-  - Returns: `{"call_sid": "...", "status": "initiated"}`
+### HTML/JavaScript Component (`src/voice_screening_ui/components/voice_interface.html`)
 
-- **`GET /health`**: Health check endpoint
+**Features:**
+- WebSocket connection to WebSocket Proxy (which connects to OpenAI)
+- Audio recording via browser ScriptProcessor API (PCM16)
+- Audio playback via Web Audio API with sequential queue
+- Real-time transcript updates
+- Toggle recording (click to start/stop)
+- Audio resampling from 24kHz to browser sample rate
+- Debug panel for troubleshooting
 
-#### LangGraph Agent Structure
+**Key Functions:**
+- `connectWebSocket()`: Establishes connection to WebSocket Proxy
+- `toggleRecording()`: Toggles recording state (start/stop)
+- `startRecording()`: Captures microphone audio and streams to API
+- `stopRecording()`: Stops recording and commits audio buffer
+- `handleRealtimeMessage()`: Processes responses from OpenAI
+- `queueAudioChunk()`: Queues audio chunks for sequential playback
+- `processAudioQueue()`: Plays audio chunks one at a time
+- `playAudioChunk()`: Decodes and plays individual TTS audio chunks
 
-**VoiceScreeningAgent** (`src/agents/voice_screening/agent.py`):
+### Analysis Function (`src/voice_screening_ui/analysis.py`)
 
-- **Extends**: `BaseAgent` (LangGraph-compatible)
-- **Graph Nodes**:
-  1. `initiate_call`: Starts Twilio outbound call
-  2. `handle_conversation`: Manages dialogue flow (called by FastAPI during call)
-  3. `analyze_call`: Post-call LLM evaluation
-  4. `update_database`: Saves results to database
+**Simple function** (no LangGraph):
+- Receives transcript text
+- Uses OpenAI GPT-4 with structured output
+- Returns `VoiceScreeningOutput` with scores and summary
+- No agent nodes or graph execution
 
-- **Public Method**: `start_voice_screening(candidate_id, phone_number)` → Returns Call SID
+### Database Integration (`src/voice_screening_ui/utils/db.py`)
 
-- **Tool**: `start_voice_screening_tool` - Callable by supervisor agents
+**Function:**
+- `write_voice_results_to_db()`: Saves results to database
+- Updates candidate status to `voice_done`
+- Uses existing `VoiceScreeningResult` model
 
-#### Implementation Details
-
-**Hybrid Architecture**:
-- **FastAPI** handles real-time webhooks and audio streaming (the "plumbing")
-- **LangGraph Agent** manages high-level conversation logic and orchestration
-- Separation of concerns: FastAPI for real-time I/O, LangGraph for reasoning
-
-**Call Initiation**:
-- Supervisor agent calls `start_voice_screening_tool(candidate_id, phone_number)`
-- Voice agent initiates Twilio outbound call via `initiate_outbound_call()`
-- Call runs asynchronously; FastAPI handles real-time events
-
-**Real-Time Processing**:
-- Twilio Media Streams send audio chunks to `/voice/media`
-- FastAPI forwards audio to OpenAI Realtime API via WebSocket
-- OpenAI returns transcriptions in real-time
-- FastAPI calls voice agent for conversation decisions
-- Agent responses converted to TwiML `<Say>` → Twilio speaks to candidate
-
-**Post-Call Analysis**:
-- When call ends, FastAPI triggers agent's `analyze_call` node
-- LLM evaluates transcript for sentiment, confidence, communication scores
-- Results saved to `VoiceScreeningResult` table
-- Candidate status updated to `voice_done`
-
-#### Environment Variables Required
+## Environment Variables
 
 ```bash
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_PHONE_NUMBER=+1234567890  # E.164 format
-OPENAI_API_KEY=your_openai_api_key
-VOICE_SCREENING_WEBHOOK_URL=https://your-domain.com  # Public URL for Twilio webhooks
+OPENAI_API_KEY=your_openai_api_key  # Required for Realtime API
 ```
 
+**WebSocket Proxy:**
+Browsers don't support custom headers in WebSocket connections, so a FastAPI-based WebSocket proxy (`src/voice_screening_ui/proxy.py`) handles authentication:
+- Proxy runs on port 8000 (configurable)
+- Accepts WebSocket connections from browser
+- Adds `Authorization` header and forwards to OpenAI Realtime API
+- Bidirectional message forwarding
+- Health check endpoint at `/health`
 
-#### Result Schema
+**Security:**
+- API key stored in environment variables (not exposed to browser)
+- Proxy handles all authentication server-side
+- Use Streamlit secrets for API key management in production
 
-**VoiceScreeningOutput** (`src/agents/voice_screening/schemas/output_schema.py`):
+## Usage
 
-The agent returns structured results stored in the database:
-
-- **`sentiment_score`** (0-1): Overall positive/negative tone
-- **`confidence_score`** (0-1): Candidate's confidence level
-- **`communication_score`** (0-1): Clarity, articulation, professionalism
-- **`llm_summary`**: LLM-generated summary of the interview
-- **`llm_judgment_json`**: Structured judgment data (optional)
-- **`key_traits`**: List of identified personality/technical traits
-- **`recommendation`**: Pass/fail or next-step recommendation
-
-**Database Storage**:
-- Results saved to `voice_screening_results` table
-- Full transcript stored in `transcript_text` column
-- Call SID tracked for reference
-- Candidate status automatically updated to `voice_done`
-
-#### Usage Example
-
-```python
-from src.agents.voice_screening.tools import start_voice_screening_tool
-
-# Supervisor agent can call this tool
-result = start_voice_screening_tool.invoke({
-    "candidate_id": "uuid-here",
-    "phone_number": "+1234567890"
-})
-# Returns: "Voice screening call initiated. Call SID: CAxxxxx"
-```
-
-#### Docker Setup
-
-The voice screening API runs as a separate service:
+### Running the Application
 
 ```bash
-docker compose up voice_api
+# Using Streamlit directly
+streamlit run src/voice_screening_ui/app.py
+
+# Or via Docker (Streamlit service)
+docker compose up voice_screening
 ```
 
-Service exposed on port `8000` and accessible at `http://localhost:8000`
+#### troubleshootips tips
+
+- if you see a warning on env variable not being set, pass the .env manually and rebuild on down (subsequent build will be faste due to docker layer caching)
+``` bash
+cd docker
+docker-compose --env-file "../.env" up voice_screening -d --build
+```
+
+- run streamlit with python path set
+``` bash
+PYTHONPATH=. streamlit run src/voice_screening_ui/app.py
+```
+
+### User Flow
+
+1. Start WebSocket proxy: `docker compose up websocket_proxy` (or run `python src/voice_screening_ui/proxy.py`)
+2. Open Streamlit UI at `http://localhost:8502` (or configured port)
+3. Enter candidate email (optional for MVP)
+4. Click "Start Interview"
+5. Browser requests microphone permission
+6. WebSocket connects to proxy (which connects to OpenAI Realtime API)
+7. Agent greets candidate
+8. User clicks mic button to start recording
+9. User speaks, audio streams to OpenAI
+10. Transcript appears in real-time
+11. Agent responds with audio (played sequentially)
+12. User clicks mic button again to stop and send
+13. User clicks "End Interview"
+14. Click "Analyze Interview" to get results
+15. Optionally save results to database
+
+## Technical Details
+
+### OpenAI Realtime API
+
+**WebSocket Connection:**
+- Model: `gpt-realtime-mini`
+- URL: `wss://api.openai.com/v1/realtime?model=gpt-realtime-mini`
+- Headers: `Authorization: Bearer {API_KEY}`, `OpenAI-Beta: realtime=v1`
+- Format: PCM16 audio at 24kHz, JSON messages
+- Turn Detection: Server-side VAD with 10s silence duration (prevents auto-commit during recording)
+
+**Key Message Types:**
+- `session.update`: Configure session (modalities, voice, instructions)
+- `input_audio_buffer.append`: Send audio chunks
+- `input_audio_buffer.commit`: Commit audio for processing
+- `response.audio_transcript.done`: Receive transcriptions
+- `response.audio.delta`: Receive TTS audio chunks
+- `response.text.done`: Receive text responses
+
+### Audio Processing
+
+**Recording:**
+- Uses browser `ScriptProcessor` API (deprecated but functional)
+- Captures audio at browser sample rate (typically 44.1kHz or 48kHz)
+- Converts to PCM16 format
+- Encodes to base64 for WebSocket transmission
+- Streams chunks via `input_audio_buffer.append`
+- Commits buffer via `input_audio_buffer.commit` when recording stops
+
+**Playback:**
+- Receives base64 PCM16 audio at 24kHz
+- Decodes using `DataView` for proper byte order (little-endian)
+- Converts PCM16 to Float32Array
+- Resamples from 24kHz to browser sample rate using `OfflineAudioContext`
+- Queues chunks for sequential playback (prevents overlapping audio)
+- Plays through browser audio context
+
+## Simplifications from Original Design
+
+**Removed:**
+- LangGraph agent complexity
+- Twilio telephony integration
+- FastAPI server
+- Media Streams handling
+- Complex state management
+- Supervisor agent integration
+
+**Kept:**
+- Database models and utilities
+- Analysis logic (simplified)
+- Streamlit UI pattern
+- OpenAI Realtime API integration
+
+## File Structure
+
+```
+src/voice_screening_ui/
+├── app.py                    # Main Streamlit UI
+├── proxy.py                  # WebSocket proxy for OpenAI authentication
+├── analysis.py               # Simple analysis function
+├── components/
+│   ├── voice_interface.html  # HTML/JS for WebSocket and audio
+│   └── __init__.py
+└── utils/
+    ├── db.py                 # Database utilities
+    └── __init__.py
+```
+
+## Testing
+
+**Manual Testing:**
+1. Start Streamlit app
+2. Test WebSocket connection
+3. Test microphone access
+4. Test audio recording and playback
+5. Test transcript display
+6. Test analysis function
+7. Test database saving
+
+**Known Limitations:**
+- Uses deprecated `ScriptProcessor` API (should migrate to `AudioWorklet`)
+- No authentication/authorization for UI access
+- Simple error handling
+- Limited session management
+- Audio resampling may introduce slight latency
+
+## Future Enhancements
+
+- Migrate from `ScriptProcessor` to `AudioWorklet` API
+- Add authentication/authorization for UI access
+- Add session persistence
+- Improve error handling and reconnection logic
+- Add recording playback
+- Add interview question templates
+- Optimize audio resampling performance
+- Add audio level visualization
+- Integrate with supervisor agent (if needed)
