@@ -13,6 +13,7 @@ duckduckgo-search
 langchain-tavily
 langchain-community
 langgraph-cli
+langgraph-api
 
 mcp
 pypdfium2
