@@ -247,20 +247,20 @@ src/voice_screening_ui/
 ## Testing
 
 **Manual Testing:**
-1. Start Streamlit app
-2. Test WebSocket connection
-3. Test microphone access
-4. Test audio recording and playback
-5. Test transcript display
-6. Test analysis function
-7. Test database saving
+1. Start Streamlit app (tested and works)
+2. Test WebSocket connection (tested and works)
+3. Test microphone access (tested and works)
+4. Test audio recording and playback (tested and works)
+5. Test transcript display (not tested)
+6. Test analysis function (doesn't work, need work, a lot of work)
+7. Test database saving (doesn't work, need work, a lot, a lot of work)
 
 **Known Limitations:**
 - Uses deprecated `ScriptProcessor` API (should migrate to `AudioWorklet`)
 - No authentication/authorization for UI access
 - Simple error handling
 - Limited session management
-- Audio resampling may introduce slight latency
+- Audio resampling may introduce slight latency (I'm new to this shit anyway)
 
 ## Future Enhancements
 
