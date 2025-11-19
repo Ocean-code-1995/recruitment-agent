@@ -5,8 +5,7 @@ pydantic-settings
 python-dotenv
 langchain
 langchain-openai
-twilio
+openai
 fastapi
 uvicorn
 websockets
-openai

@@ -63,3 +63,4 @@ src/database/cvs/tests/*.txt
 !src/database/cvs/parsed/info.md
 
 .idea/
+.langgraph_api/

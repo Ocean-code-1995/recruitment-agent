@@ -1,4 +1,5 @@
-from src.agents.voice_screening.agent import VoiceScreeningAgent
+# Voice screening agent - simplified MVP implementation
+# Main UI is in src/voice_screening_ui/app.py
 
-__all__ = ["VoiceScreeningAgent"]
+__all__ = []
 
