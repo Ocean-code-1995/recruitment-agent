@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.agents.cv_screening.screener import evaluate_cv
+from src.agents.cv_screening.utils.db import write_results_to_db
 
 
 # ============================================================================
@@ -21,13 +22,15 @@ from src.agents.cv_screening.screener import evaluate_cv
 # ============================================================================
 
 @tool
-def screen_cv(cv_text: str, jd_text: str = "") -> dict:
+def screen_cv(cv_text: str, jd_text: str = "", candidate_email: str = "") -> dict:
     """
     Screen a candidate's CV against a job description.
+    Automatically saves results to database if candidate_email is provided.
     
     Args:
         cv_text: The candidate's CV content as text
         jd_text: The job description to match against (optional)
+        candidate_email: The candidate's email for database storage (optional)
     
     Returns:
         Dictionary with CV screening results including fit scores and feedback
@@ -40,6 +43,15 @@ def screen_cv(cv_text: str, jd_text: str = "") -> dict:
     
     try:
         result = evaluate_cv(cv_text, job_description)
+        
+        # Auto-save to database if email provided
+        if candidate_email:
+            try:
+                write_results_to_db(candidate_email, result)
+            except Exception as db_error:
+                print(f"⚠️ Warning: Could not save to database: {str(db_error)}")
+                # Continue anyway - don't fail the screening if DB save fails
+        
         return {
             "overall_fit_score": result.overall_fit_score,
             "skills_match_score": result.skills_match_score,
@@ -112,15 +124,16 @@ agent = create_agent(
     system_prompt="""You are an HR Recruitment Supervisor Agent. Your role is to evaluate candidates and make hiring recommendations.
 
 You have the following tools available:
-1. screen_cv - Evaluate a candidate's CV against a job description
+1. screen_cv - Evaluate a candidate's CV against a job description (automatically saves results to database if candidate_email is provided)
 2. voice_screening - TODO: Schedule voice screening (not yet implemented)
 3. schedule_hr_interview - TODO: Schedule HR interview (not yet implemented)
 
 Your process:
-1. Start by screening the candidate's CV using the screen_cv tool
-2. Based on CV results, decide if you need additional evaluation
-3. Provide a clear recommendation: HIRE, REJECT, or HOLD_FOR_REVIEW
-4. Explain your reasoning based on the evaluation results
+1. Extract candidate email from the message if available
+2. Start by screening the candidate's CV using the screen_cv tool, passing the candidate_email parameter for automatic database storage
+3. Based on CV results, decide if you need additional evaluation
+4. Provide a clear recommendation: HIRE, REJECT, or HOLD_FOR_REVIEW
+5. Explain your reasoning based on the evaluation results
 
 Always use the available tools to gather information before making recommendations.
 Be thorough but efficient in your evaluation."""
