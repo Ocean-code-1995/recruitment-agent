@@ -2,6 +2,12 @@
 Simple analysis function for voice screening transcripts.
 No LangGraph - just a direct OpenAI API call.
 """
+import sys
+from pathlib import Path
+
+# Add parent directory to path to enable imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.agents.voice_screening.schemas.output_schema import VoiceScreeningOutput

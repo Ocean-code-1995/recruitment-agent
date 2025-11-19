@@ -7,8 +7,24 @@ from datetime import datetime
 from pathlib import Path
 import uuid
 
-from src.voice_screening_ui.analysis import analyze_transcript
-from src.voice_screening_ui.utils.db import write_voice_results_to_db
+import sys
+from pathlib import Path
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    # Load from repo root .env
+    env_path = Path(__file__).parent.parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # dotenv not installed, will try to get from environment
+
+# Add src directory to path so imports work
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from voice_screening_ui.analysis import analyze_transcript
+from voice_screening_ui.utils.db import write_voice_results_to_db
 
 # Try to import requests for health check (optional)
 try:
@@ -100,7 +116,7 @@ if st.session_state.is_interview_active:
     # Load HTML component with WebSocket and audio handling
     html_file = Path(__file__).parent / "components" / "voice_interface.html"
     if html_file.exists():
-        with open(html_file, "r") as f:
+        with open(html_file, "r", encoding="utf-8") as f:
             html_content = f.read()
         
         # Inject session ID and API key (from environment variables or Streamlit secrets)
