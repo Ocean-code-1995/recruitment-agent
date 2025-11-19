@@ -70,7 +70,6 @@ async def main():
     agent = create_agent(MODEL, tools)
 
     # 4) Test: ask the agent to list unread emails or send a draft
-    # Tailor the prompt to the tool names your Gmail MCP exposes (e.g., listEmails, sendEmail, etc.)
     result = await agent.ainvoke({
         "messages": [
             {
@@ -83,12 +82,7 @@ async def main():
             {
                 "role": "user",
                 "content": (
-                    "Send an email to sebastianwefersnz@gmail.com "
-                    "with subject 'Sailing Cuuuuunt!' and message "
-                    "'Hello there Sebastian,\n\n"
-                    "'Wanna go sailing soon when the wind blows dogs off chains?'"
-                    "'Warm regards,'"
-                    "'GPT-4o via Gmail MCP server 😊'"
+                    "Send an email to sebastianwefersnz@gmail.com and say hello."
                 ),
             },
         ]
@@ -96,13 +90,5 @@ async def main():
 
     print(result['messages'][-1].content)
 
-    # Example follow-up: ask it to draft an email (depends on tool naming/params in gmail-mcp)
-    # result2 = await agent.ainvoke(
-    #     {"messages": [{"role": "user", "content": "Draft an email to myself with subject 'Hello MCP' and body 'Testing LangGraph + MCP Gmail'."}]}
-    # )
-    # print(result2)
-
 if __name__ == "__main__":
     asyncio.run(main())
-    
-

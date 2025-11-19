@@ -61,3 +61,8 @@ src/database/cvs/tests/*.txt
 !src/database/cvs/parsed/.gitkeep
 !src/database/cvs/uploads/info.md
 !src/database/cvs/parsed/info.md
+
+# lamnggraph CLI cache
+.lgcache/
+.langgraph_api/
+

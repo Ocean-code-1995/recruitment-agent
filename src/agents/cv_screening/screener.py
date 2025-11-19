@@ -26,10 +26,12 @@ def evaluate_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
 
     Args:
         cv_text (str): The candidate's CV text.
-        jd_text (str): The job description text.    
+        jd_text (str): The job description text.
 
     Returns:
         CVScreeningResult: The structured screening result.
+        Makes model write feedback before scoring, leading to better calibration
+        and genuine reasoning that leads to more balanced scores.
     """
     llm = (
         ChatOpenAI(
@@ -43,10 +45,9 @@ def evaluate_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
     messages = [
         SystemMessage(
             content=(
-                "You are an HR assistant evaluating how well a candidate's CV "
-                "matches a given job description. "
-                "Provide structured numeric scores between 0 and 1, "
-                "and a short textual summary."
+                "You are an HR assistant evaluating how well a candidate's CV matches a given job description. "
+                "First, provide a short textual summary of your assessment. "
+                "Then, provide structured numeric scores between 0 and 1, and a short textual summary."
             )
         ),
         HumanMessage(

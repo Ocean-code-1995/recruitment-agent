@@ -9,5 +9,17 @@ google-auth
 langgraph
 langgraph-supervisor
 langchain-mcp-adapters
+duckduckgo-search
+langchain-tavily
+langchain-community
+langgraph-cli
+
 mcp
+pypdfium2
+pillow
+ftfy
+sqlalchemy
+psycopg2-binary
+
+python-dotenv
 openai
