@@ -1,5 +1,9 @@
 # ***HR Recruitment Agent***
 
+![License](https://img.shields.io/badge/License-GPLv3-blue)
+![Gradio](https://img.shields.io/badge/Gradio-Interface-FF6F00?logo=gradio&logoColor=orange)
+![Hugging Face](https://img.shields.io/badge/Hugging_Face-Models-FFD21E?logo=huggingface&logoColor=yellow)
+
 ## Overview
 This repository hosts our team's submission for **Track 2: MCP in Action** in the [MCP's 1st Birthday Hackathon](https://huggingface.co/MCP-1st-Birthday).
 
