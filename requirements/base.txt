@@ -1,11 +1,5 @@
-sqlalchemy
-psycopg2-binary
 pydantic
 pydantic-settings
 python-dotenv
-langchain
-langchain-openai
-openai
-fastapi
-uvicorn
-websockets
+
+
