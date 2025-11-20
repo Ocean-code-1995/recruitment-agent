@@ -135,7 +135,7 @@ agentic-hr/
 │ │
 │ ├── 📁 core/
 │ │ │ ├── base_agent.py           # Abstract BaseAgent (LangGraph-compatible)
-│ │ │ ├── orchestrator.py         # Main planner (LangGraph graph assembly)
+│ │ │ ├── supervisor.py           # Supervisor agent (LangGraph graph assembly)
 │ │ │ ├── state.py                # Shared AgentState + context window
 │ │ │ ├── planner.py              # High-level planning logic
 │ │ │ └── executor.py             # Graph executor / runner
