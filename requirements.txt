@@ -1,26 +1,36 @@
-google-auth
-langgraph
-langchain
-langchain-openai
-langchain-mcp-adapters
-duckduckgo-search
-langchain-tavily
-langchain-community
-langgraph-cli
-langgraph-api
+<<<<<<<< HEAD:requirements/dev.txt
+# Development and testing requirements
+# Includes base requirements
+-r base.txt
 
-mcp
-pypdfium2
-pillow
-ftfy
+# LangGraph development tools
+========
 sqlalchemy
 psycopg2-binary
 pydantic
 pydantic-settings
 python-dotenv
-
+langchain
+langchain-openai
+google-auth
+langgraph
 langgraph-supervisor
+langchain-mcp-adapters
+duckduckgo-search
+langchain-tavily
+langchain-community
+>>>>>>>> 38af090 (Create supervisor agent (#10)):requirements.txt
+langgraph-cli
+langgraph-api
+
+# Additional tools for development/testing
+duckduckgo-search
+langchain-tavily
+
+<<<<<<<< HEAD:requirements/dev.txt
+# Google auth for MCP servers (dev/testing)
+google-auth
+========
+python-dotenv
 openai
-pypdfium2
-Pillow
-ftfy
+>>>>>>>> 38af090 (Create supervisor agent (#10)):requirements.txt

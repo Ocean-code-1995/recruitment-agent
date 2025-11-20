@@ -1,9 +1,0 @@
-# Supervisor Agent requirements
-# Includes base requirements
--r base.txt
-
-# LangGraph for agent orchestration
-langgraph
-langchain-community
-langchain-mcp-adapters
-
