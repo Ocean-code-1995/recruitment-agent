@@ -23,8 +23,6 @@ except ImportError:
 # Add src directory to path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from voice_screening_ui.analysis import analyze_transcript
-from voice_screening_ui.utils.db import write_voice_results_to_db
 
 # Try to import requests for health check (optional)
 try:
@@ -225,47 +223,4 @@ if not st.session_state.is_interview_active and st.session_state.transcript:
             if entry.get("speaker") in ["agent", "candidate"]
         ])
         
-        if transcript_text:
-            with st.spinner("Analyzing interview transcript..."):
-                try:
-                    # Analyze transcript
-                    result = analyze_transcript(transcript_text)
-                    
-                    # Display results
-                    st.success("Analysis complete!")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Sentiment Score", f"{result.sentiment_score:.2f}")
-                    with col2:
-                        st.metric("Confidence Score", f"{result.confidence_score:.2f}")
-                    with col3:
-                        st.metric("Communication Score", f"{result.communication_score:.2f}")
-                    
-                    st.markdown("### Summary")
-                    st.write(result.llm_summary)
-                    
-                    if result.recommendation:
-                        st.markdown("### Recommendation")
-                        st.info(result.recommendation)
-                    
-                    # Save to database if candidate_id is available
-                    if st.session_state.candidate_id:
-                        if st.button("💾 Save Results to Database"):
-                            try:
-                                write_voice_results_to_db(
-                                    candidate_id=st.session_state.candidate_id,
-                                    session_id=st.session_state.session_id or "web_session",
-                                    transcript_text=transcript_text,
-                                    result=result
-                                )
-                                st.success("Results saved to database!")
-                            except Exception as e:
-                                st.error(f"Error saving to database: {e}")
-                
-                except Exception as e:
-                    st.error(f"Error analyzing transcript: {e}")
-                    st.exception(e)
-        else:
-            st.warning("No transcript available for analysis.")
-
+        
