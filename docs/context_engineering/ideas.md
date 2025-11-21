@@ -2,7 +2,10 @@
 ---
 
 This file serves as inspiration for context engneering techniques that are currently being used by experts in the industry.
-[Langchain Source](https://www.notion.so/Context-Engineering-for-Agents-2a1808527b17803ba221c2ced7eef508)
+
+***Inpsired by:***
+- [Langchain](https://www.notion.so/Context-Engineering-for-Agents-2a1808527b17803ba221c2ced7eef508)
+- [Video](https://www.youtube.com/watch?v=XFCkrYHHfpQ&t=217s)
 
 
 ## ***`What is context engineering?`***
