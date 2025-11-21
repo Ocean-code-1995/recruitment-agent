@@ -10,9 +10,11 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first (for build caching)
-COPY ../requirements/ ./requirements/
+COPY ../requirements/base.txt ./requirements/base.txt
+COPY ../requirements/db.txt ./requirements/db.txt
+COPY ../requirements/voice_proxy.txt ./requirements/voice_proxy.txt
 # Install Streamlit + base deps
-RUN pip install --no-cache-dir -r requirements/streamlit.txt
+RUN pip install --no-cache-dir -r requirements/voice_proxy.txt
 
 # Copy project source code
 COPY ../src ./src

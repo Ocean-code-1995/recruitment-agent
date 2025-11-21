@@ -10,8 +10,10 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file and install dependencies
-COPY requirements/base.txt base.txt
-RUN pip install --no-cache-dir -r base.txt
+
+COPY requirements/base.txt ./requirements/base.txt
+COPY requirements/db.txt  ./requirements/db.txt
+RUN pip install --no-cache-dir -r requirements/db.txt
 
 # Copy *only* the candidate database module
 COPY src/database/candidates ./src/database/candidates
