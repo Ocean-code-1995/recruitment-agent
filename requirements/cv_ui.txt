@@ -1,0 +1,15 @@
+# CV Upload UI requirements
+# Includes base requirements
+-r base.txt
+-r db.txt
+
+openai
+
+# Streamlit for UI
+streamlit
+
+# PDF processing
+pypdfium2
+pillow
+ftfy
+

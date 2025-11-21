@@ -1,0 +1,6 @@
+-r base.txt
+streamlit
+uvicorn[standard]
+requests
+
+
