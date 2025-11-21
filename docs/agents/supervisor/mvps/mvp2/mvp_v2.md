@@ -163,8 +163,44 @@ This approach provides:
 This structure is scalable, maintainable, and production-friendly while still pushing agent autonomy very far.
 
 
-## ⚡ Handling Everything Concurrently — The Async Supervisor Layer
+## ⚡ ***Handling Everything Concurrently — The Async Supervisor Layer***
+---
+`The system must support concurrent processing of multiple candidate groups, each representing a different stage in the application pipeline (e.g., CV screening, voice screening, decision). Within each group, it should be able to process batches of candidates simultaneously while preserving per-candidate isolation and state consistency.`
 
+### **Thread-Based Per-Candidate Isolation For the Rescue**
+
+To ensure deterministic, fault-tolerant, and concurrent execution, the system leverages **LangGraph thread IDs** for per-candidate isolation:
+
+1. **Supervisor Delegation**  
+   The Supervisor Agent queries all candidates, groups them by their current `status` (e.g., CV screening, voice screening, decision), and passes the **list of candidate IDs** to the appropriate subagent tool.  
+   Each subagent handles its own data loading, ensuring the Supervisor remains lightweight and purely orchestration-focused.
+
+2. **Subagent Execution (Thread-per-Candidate)**  
+   Inside each subagent (e.g., `screen_cv`), the system iterates over all received candidate IDs.  
+   For each candidate:
+   - The **candidate ID serves as the `thread_id`**, providing a unique persistent context in LangGraph.  
+   - The subagent loads candidate data from the database (CV path, JD path, etc.).  
+   - The CV or voice screening logic runs **within that thread’s context**.  
+   - On completion, the results are written back to the database, and the per-candidate checklist and state are updated.
+
+3. **Parallel and Safe Processing**  
+   Subagents can process multiple candidates concurrently by spawning asynchronous executions per `thread_id`.  
+   Each candidate’s context remains isolated, preventing race conditions or context mixing.
+
+**Result:**  
+- Supervisor coordinates and dispatches candidate groups  
+- Subagents handle per-candidate logic using thread-based persistence  
+- Each candidate’s run is self-contained, recoverable, and writes its final results back to the database
+
+
+
+Latest chat: https://chatgpt.com/share/6920d318-3f64-8012-8fca-b17316093131
+
+---
+
+> below mst be adapted based on section above:
+
+...
 ```mermaid
 flowchart TD
 
@@ -211,10 +247,10 @@ Conceptual Overview
 5. The supervisor awaits completion of all group tasks and reports progress and results.
 
 This preserves:
-✅ Single supervisor reasoning context
-✅ Concurrent group + per-candidate execution
-✅ Isolated per-candidate state and file I/O
-✅ High throughput without context bleed
+- ✅ Single supervisor reasoning context
+- ✅ Concurrent group + per-candidate execution
+- ✅ Isolated per-candidate state and file I/O
+- ✅ High throughput without context bleed
 
 ---
 
