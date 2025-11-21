@@ -1,0 +1,14 @@
+# Development and testing requirements
+# Includes base requirements
+-r base.txt
+
+# LangGraph development tools
+langgraph-cli
+langgraph-api
+
+# Additional tools for development/testing
+duckduckgo-search
+langchain-tavily
+
+# Google auth for MCP servers (dev/testing)
+google-auth
