@@ -99,6 +99,57 @@ The supervisor uses this checklist to determine the next atomic action.
 It loads only this candidate’s context, performs exactly one update, writes back, and moves on.
 
 ---
+## **Hybrid Progress Tracking — DB Status + Checklist**
+
+The HR agent maintains two synchronized layers of workflow state:
+
+- **Database `status` field:**  
+  Captures the **coarse-grained milestone** in the candidate’s lifecycle  
+  (e.g., `applied`, `cv_screened`, `interview_scheduled`, `decision_made`).  
+  → This is the **authoritative system state** used for HR dashboards, analytics, and reporting.
+
+- **Per-candidate Markdown checklist:**  
+  Tracks **fine-grained atomic actions** that occur within each milestone  
+  (e.g., CV parsed, CV screened, email sent, candidate replied).  
+  → This serves as the **agent’s operational log**, enabling deterministic reasoning, auditing, and safe restarts.
+
+---
+
+### **Checklist and Milestone Boundaries**
+
+The **checklist** is composed of multiple **substeps**, each representing one small, deterministic action.  
+When all substeps belonging to a stage are completed, the system reaches a **milestone boundary**.  
+That boundary marks a safe point to update the candidate’s `status` field in the database.
+
+| Milestone (`status` in DB) | Meaning | Checklist Substeps Leading to Boundary |
+|-----------------------------|----------|---------------------------------------|
+| `applied` | Candidate record created | `[x] CV uploaded`, `[x] CV parsed` |
+| `cv_screened` | Screening phase finished | `[x] Screening started`, `[x] Screening completed`, `[x] Result stored` |
+| `interview_scheduled` | Interview arranged | `[x] Candidate notified`, `[x] Availability received`, `[x] Interview scheduled` |
+| `decision_made` | Final decision delivered | `[x] Interview completed`, `[x] Decision logged`, `[x] Notification email sent` |
+
+---
+
+### **Sync Rule**
+
+1. After **each atomic substep**, the supervisor updates the checklist file.  
+2. When a **milestone boundary** is reached (all substeps for a phase checked off),  
+   the supervisor updates the corresponding `status` field in the database.  
+3. The checklist remains the **fine-grained operational truth**,  
+   while the database holds the **coarse-grained canonical truth**.
+
+---
+
+### **Summary**
+
+- **Checklist = micro-level progress tracker** (agent reasoning + recovery)  
+- **Milestone boundaries = transition triggers** (define when to sync with DB)  
+- **Database `status` = macro-level lifecycle state** (system-wide reference)
+
+This hybrid approach combines **LLM-friendly transparency** with **system-level consistency**, ensuring the agent can reason, recover, and scale safely.
+
+
+---
 
 ### ***Result***
 This approach provides:
