@@ -192,6 +192,10 @@ To ensure deterministic, fault-tolerant, and concurrent execution, the system le
 - Subagents handle per-candidate logic using thread-based persistence  
 - Each candidate’s run is self-contained, recoverable, and writes its final results back to the database
 
+> **Note:**  
+> During a “Process All” operation, the Supervisor Agent executes **multiple reasoning loops**, invoking each subagent tool in sequence (e.g., `screen_cv`, `voice_screening`, `schedule_hr_interview`).  
+> After each tool call, it observes the result, reasons about the next step, and continues until all candidate groups are processed.
+
 
 
 Latest chat: https://chatgpt.com/share/6920d318-3f64-8012-8fca-b17316093131
