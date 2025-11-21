@@ -5,7 +5,7 @@
 This V1 map outlines the simplest complete workflow for the HR agent system: HR enters the UI, receives a clear overview of all candidates and their screening status, and then chooses one of two actions—process new applicants or continue with those who are already screened. The supervisor then carries out the chosen workflow step-by-step, invoking the appropriate subagents (screening, Gmail, calendar) and updating each candidate’s state accordingly.
 
 
-## **V1 Workflow Diagram — HR → Supervisor → Actions**
+## **V2 Workflow Diagram — HR → Supervisor → Actions**
 ```mermaid
 flowchart TD
 
