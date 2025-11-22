@@ -1,6 +1,7 @@
 import streamlit as st
 import sys
 import os
+import uuid
 from dotenv import load_dotenv
 
 # Load env vars
@@ -20,6 +21,10 @@ st.caption("I can query the candidate database and help with recruitment tasks."
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# Initialize thread_id for LangGraph memory
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = str(uuid.uuid4())
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -42,10 +47,14 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
         
         with st.spinner("Thinking..."):
             try:
-                # Run the agent
-                # supervisor_agent is a LangGraph compiled graph
+                # Config for stateful conversation (checkpointer)
+                config = {"configurable": {"thread_id": st.session_state.thread_id}}
+                
+                # Run the agent with ONLY the new message
+                # Because we use a checkpointer, the agent "remembers" previous messages automatically
                 response = supervisor_agent.invoke(
-                    {"messages": [HumanMessage(content=prompt)]}
+                    {"messages": [HumanMessage(content=prompt)]},
+                    config=config
                 )
                 
                 # Extract the final response from the agent
@@ -62,4 +71,3 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
 
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-
