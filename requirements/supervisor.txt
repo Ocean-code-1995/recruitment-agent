@@ -9,3 +9,4 @@ langchain-mcp-adapters
 streamlit
 rich
 
+promptlayer
