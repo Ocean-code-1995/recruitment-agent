@@ -18,9 +18,9 @@ from langgraph.graph import END, START, StateGraph, MessagesState
 from langgraph.types import Command
 from langgraph.checkpoint.memory import MemorySaver
 
-from codeact.schemas import TokenStream
-from codeact.schemas.openai_key import OpenAIApiKey
-from codeact.utils import pretty_print_state
+from ..schemas import TokenStream
+from ..schemas.openai_key import OpenAIApiKey
+from ..utils import pretty_print_state
 
 
 
@@ -147,14 +147,22 @@ class CodeActAgent:
 
     @staticmethod
     def _load_prompt(p: Optional[Union[str, Path]]) -> Optional[str]:
-        """Load a prompt from file path or treat as raw string.
-        """
+        """Load a prompt from file path or treat as raw string."""
         if p is None:
             return None
-        p = Path(p)
-        if p.exists() and p.is_file():
-            return p.read_text(encoding="utf-8")
+
+        # If it's already multiline or contains newlines, it's almost certainly a literal string
+        if isinstance(p, str) and ("\n" in p or len(p) > 200):
+            return p
+
+        # Otherwise, check if it's an actual file path
+        path = Path(p)
+        if path.exists() and path.is_file():
+            return path.read_text(encoding="utf-8")
+
+        # Fallback: just return as string
         return str(p)
+
 
     def _count_tokens(self, text: str) -> int:
         """Count tokens for a given text.
@@ -460,7 +468,7 @@ class CodeActAgent:
         state = {
             "messages": messages, "context": context or {}
         }
-        return self.compiled_agent.generate(
+        return self.compiled_agent.invoke( #TODO: note changed from generate to invoke, hope it works
             state, config=config
         )
 
