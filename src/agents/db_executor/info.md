@@ -13,7 +13,7 @@ Test as follows:
 >>> export OPENAI_API_KEY=sk-...   # or however you normally set it
 
 # Override host so the Python code connects to localhost, not 'db' and run "db_executor"
->>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python -m src.agents.db_executor.dx_executor
+>>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python -m src.agents.db_executor.db_executor
 
 
 # DEBUG attempt
