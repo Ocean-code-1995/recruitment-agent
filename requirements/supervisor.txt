@@ -6,4 +6,6 @@
 langgraph
 langchain-community
 langchain-mcp-adapters
+streamlit
+rich
 
