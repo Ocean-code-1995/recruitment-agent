@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.agents.cv_screening.screener import evaluate_cv
+from src.agents.cv_screening.cv_screener import evaluate_cv
 from src.agents.cv_screening.utils.db import write_results_to_db
 
 

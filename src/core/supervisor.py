@@ -35,7 +35,7 @@ from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-from src.agents.cv_screening.screener import evaluate_cv
+from src.agents.cv_screening.cv_screener import evaluate_cv
 from src.agents.cv_screening.schemas.output_schema import CVScreeningOutput
 from src.state.candidate import CandidateStatus, DecisionStatus
 
