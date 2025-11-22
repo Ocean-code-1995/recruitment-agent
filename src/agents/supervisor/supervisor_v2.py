@@ -28,6 +28,6 @@ supervisor_model = ChatOpenAI(model="gpt-4o", temperature=0)
 supervisor_agent = create_agent(
     model=supervisor_model,
     tools=subagents,
-    system_prompt=get_prompt("supervisor"),
+    system_prompt=get_prompt("Supervisor"),
     checkpointer=memory,          # outcome for langsmith UI
 )

@@ -83,40 +83,30 @@ class PromptManager:
         # Try PromptLayer first
         if self.client:
             try:
-                template_config = {
-                    "label": label
-                }
-                if version:
-                    template_config["version"] = version
-
-                prompttemplate = self.client.templates.get(
-                    template_name,
-                    template_config
+                # Use PromptLayer's run() method with tags for environment
+                response = self.client.run(
+                    prompt_name=template_name,
+                    input_variables={},
+                    tags=[label]
                 )
-                # Extract prompt content from response
-                prompt_content = prompttemplate["llm_kwargs"]["messages"][0]["content"]
-                print(f"📋 Loaded prompt '{template_name}' from PromptLayer (v{prompttemplate.get('version', 'latest')}, {label})")
+                
+                # Extract the prompt content from response
+                # PromptLayer returns a dict with 'output' key containing the rendered prompt
+                if isinstance(response, dict):
+                    prompt_content = response.get('output') or str(response)
+                else:
+                    prompt_content = str(response)
+                
+                print(f"📋 Loaded prompt '{template_name}' from PromptLayer (environment: {label})")
                 return prompt_content
 
             except Exception as e:
                 print(f"⚠️ PromptLayer failed: {e}, trying fallback...")
                 # Fall through to fallback instead of raising
 
-        # Fallback to local file
-        if fallback_path:
-            try:
-                with open(fallback_path, 'r') as f:
-                    content = f.read()
-                print(f"📂 Loaded prompt '{template_name}' from local file: {fallback_path}")
-                return content
-            except Exception as e:
-                raise ValueError(
-                    f"❌ Failed to load fallback file '{fallback_path}': {e}"
-                )
-
-        # Only raise if both PromptLayer AND fallback fail
+        # No fallback - PromptLayer is required
         raise ValueError(
-            f"Could not load prompt '{template_name}' from any source"
+            f"❌ Could not load prompt '{template_name}' from PromptLayer. Make sure PROMPTLAYER_API_KEY is set and the template exists."
         )
 
 

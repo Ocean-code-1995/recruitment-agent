@@ -20,10 +20,10 @@ _prompt_manager = PromptManager(environment=os.getenv("PROMPT_ENVIRONMENT", "pro
 
 def get_prompt(template_name: str, version: int = None, label: str = None) -> str:
     """
-    Get a prompt by template name with automatic fallback path resolution.
+    Get a prompt by template name from PromptLayer.
     
     Args:
-        template_name: Name of the prompt template (e.g., 'db_executor', 'supervisor')
+        template_name: Name of the prompt template (e.g., 'DB_Executor', 'Supervisor')
         version: Optional PromptLayer version
         label: Optional environment label (dev, staging, production)
     
@@ -31,17 +31,14 @@ def get_prompt(template_name: str, version: int = None, label: str = None) -> st
         Prompt content as string
     
     Raises:
-        ValueError: If prompt cannot be found
+        ValueError: If prompt cannot be found on PromptLayer
     """
-    # Construct fallback path to local template file
-    fallback_path = os.path.join(TEMPLATES_DIR, f"{template_name}.txt")
-    
-    # Try to get prompt from PromptLayer, fallback to local file
+    # Get prompt from PromptLayer (no local fallback)
     return _prompt_manager.get_prompt(
         template_name=template_name,
         version=version,
         label=label,
-        fallback_path=fallback_path
+        fallback_path=None
     )
 
 
