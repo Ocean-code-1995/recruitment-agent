@@ -20,7 +20,7 @@ load_dotenv()
 
 
 # --- The evaluator function ---
-def evaluate_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
+def screen_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
     """
     Evaluate a candidate's CV against a job description using an LLM.
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     jd_text = read_file(BASE_PATH / "cvs/job_postings/ai_engineer.txt")
 
     # trigger evaluation
-    result = evaluate_cv(cv_text, jd_text)
+    result = screen_cv(cv_text, jd_text)
     print(json.dumps(result.model_dump(), indent=2))
 
     # optionally write to DB
