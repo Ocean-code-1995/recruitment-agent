@@ -7,6 +7,8 @@ from src.database.candidates.models import (
     InterviewScheduling,
     FinalDecision,
 )
+from langchain_core.tools import tool
+
 
 SYSTEM_PROMPT = """
 # 🧠 System Prompt — DB Executor Agent (Concise)
@@ -90,6 +92,7 @@ print(json.dumps(result, indent=2, default=str))
 """
 
 
+@tool
 def db_executor(query: str) -> dict:
     """
     Consumes a natural-language query and executes it through the CodeActAgent.
