@@ -1,19 +1,12 @@
-sqlalchemy
-psycopg2-binary
-pydantic
-pydantic-settings
-python-dotenv
-langchain
-langchain-openai
 google-auth
 langgraph
-langgraph-supervisor
+langchain
+langchain-openai
 langchain-mcp-adapters
 duckduckgo-search
 langchain-tavily
 langchain-community
 langgraph-cli
-langgraph-api
 
 mcp
 pypdfium2
@@ -21,6 +14,10 @@ pillow
 ftfy
 sqlalchemy
 psycopg2-binary
-
+pydantic
+pydantic-settings
 python-dotenv
 openai
+pypdfium2
+Pillow
+ftfy

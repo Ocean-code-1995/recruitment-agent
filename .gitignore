@@ -66,3 +66,4 @@ src/database/cvs/tests/*.txt
 .lgcache/
 .langgraph_api/
 
+.idea/

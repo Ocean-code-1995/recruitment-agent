@@ -5,8 +5,6 @@ services:
     image: postgres:15
     container_name: agentic_hr_db
     restart: always
-    env_file:
-      - ../.env
     ports:
       - "5432:5432"
     volumes:
@@ -16,6 +14,16 @@ services:
       interval: 3s
       timeout: 3s
       retries: 5
+    # Hey compose here is env file, 
+    # pass it to container, but not the .env itself
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     networks:
       - hrnet
 
@@ -30,10 +38,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Hey compose here is env file, 
+    # pass it to container, but not the .env itself
     env_file:
       - ../.env
     environment:
-      POSTGRES_HOST: db
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     command: ["python", "-m", "src.database.candidates.client"]
 
     volumes:
@@ -47,12 +61,12 @@ services:
     networks:
       - hrnet
 
-  # --- Streamlit UI ---
-  streamlit:
+  # --- CV Upload ---
+  cv_upload_streamlit:
     container_name: cv_upload_streamlit
     build:
       context: ..
-      dockerfile: docker/Dockerfile.streamlit
+      dockerfile: docker/Dockerfile.cv_upload
     ports:
       - "8501:8501"
     depends_on:
@@ -60,6 +74,7 @@ services:
     env_file:
       - ../.env
     environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
       CV_UPLOAD_PATH: /app/src/database/cvs/uploads
     volumes:
@@ -67,6 +82,51 @@ services:
       - ../:/app
       # Shared volume for CV uploads (persistent)
       - ../src/database/cvs:/app/src/database/cvs
+    networks:
+      - hrnet
+
+  # --- WebSocket Proxy for OpenAI Realtime API ---
+  websocket_proxy:
+    container_name: websocket_proxy
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.voice_proxy
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    environment:
+      PYTHONPATH: /app
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
+    command: ["python", "-m", "uvicorn", "src.voice_screening_ui.proxy:app", "--host", "0.0.0.0", "--port", "8000"]
+    networks:
+      - hrnet
+
+  # --- Voice Screening UI ---
+  voice_screening_streamlit:
+    container_name: voice_screening_streamlit
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.voice_screening
+    ports:
+      - "8502:8501"  # Map host port 8502 to container port 8501
+    depends_on:
+      - db
+      - websocket_proxy
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
+      PYTHONPATH: /app
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime  # Internal Docker network URL
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
+    command: ["streamlit", "run", "src/voice_screening_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
 
