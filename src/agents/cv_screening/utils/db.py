@@ -5,6 +5,51 @@ from src.state.candidate import CandidateStatus
 from src.agents.cv_screening.schemas.output_schema import CVScreeningOutput
 
 
+def get_candidate_by_name(full_name: str):
+    """
+    Retrieve a candidate by their full name.
+    
+    Args:
+        full_name (str): The full name of the candidate.
+        
+    Returns:
+        Candidate: The candidate object or None if not found.
+        (Note: attributes are detached after session close, so access them immediately)
+    """
+    with SessionLocal() as session:
+        candidate = session.query(Candidate).filter(Candidate.full_name == full_name).first()
+        if candidate:
+            # Refresh/expunge to make it usable after session closes if needed, 
+            # or just return the data we need. Returning the dict of values is safer.
+            return {
+                "id": candidate.id,
+                "full_name": candidate.full_name,
+                "email": candidate.email,
+                "parsed_cv_file_path": candidate.parsed_cv_file_path,
+                "status": candidate.status
+            }
+        return None
+
+
+def update_application_status(candidate_email: str, status: CandidateStatus) -> None:
+    """
+    Update the status of a candidate application.
+    
+    Args:
+        candidate_email (str): The email of the candidate.
+        status (CandidateStatus): The new status to set.
+    """
+    with SessionLocal() as session:
+        candidate = session.query(Candidate).filter_by(email=candidate_email).first()
+        if candidate:
+            candidate.status = status
+            candidate.updated_at = datetime.utcnow()
+            session.commit()
+            print(f"✅ Updated status for {candidate_email} to {status.value}")
+        else:
+            print(f"⚠️ No candidate found with email: {candidate_email}")
+
+
 def write_results_to_db(
     candidate_email: str,
     result: CVScreeningOutput,
