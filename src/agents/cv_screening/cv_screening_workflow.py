@@ -12,24 +12,25 @@ from src.agents.cv_screening.utils import (
 @tool
 def cv_screening_workflow(candidate_full_name: str = "") -> str:
     """
-    Orchestrates the CV screening process for a given candidate.
+    Runs the deterministic CV screening workflow for a candidate.
+    This is a fixed sequential process, not a reasoning agent.
 
-    Workflow:
-        1. Retrieve candidate info from DB
-        2. Read files (CV & Job Description)
-        3. Evaluate CV
-        4. Store results in DB & update status
-    
+    Steps:
+    1. Retrieve candidate info from DB
+    2. Read files (CV & Job Description)
+    3. Evaluate CV
+    4. Store results in DB & update status
+
     Args:
         candidate_full_name (str): The full name of the candidate to screen.
-    
+
     Returns:
-        str: A message indicating the outcome of the workflow.
+        str: A message indicating the outcome of the workflow. (✅ or ❌)
     """
     if not candidate_full_name:
         return "❌ Candidate name is required."
 
-    # 1. Retrieve candidate info from DB
+    # 1️⃣ Retrieve candidate info from DB
     print(f"🔍 Looking up candidate: {candidate_full_name}")
     candidate = get_candidate_by_name(candidate_full_name)
     
@@ -63,7 +64,7 @@ def cv_screening_workflow(candidate_full_name: str = "") -> str:
     if not jd_path.exists():
         return f"❌ Job description not found at: {jd_path}"
 
-    # 2. Read files
+    # 2️⃣ Read files
     print(f"📄 Reading Job Description from: {jd_path}")
     jd_text = read_file(jd_path)
     
@@ -71,14 +72,14 @@ def cv_screening_workflow(candidate_full_name: str = "") -> str:
     cv_text = read_file(cv_path)
     
 
-    # 3. Evaluate CV
+    # 3️⃣ Evaluate CV
     print("🧠 Running LLM screening...")
     try:
         result = screen_cv(cv_text, jd_text)
     except Exception as e:
         return f"❌ Error during LLM screening: {str(e)}"
 
-    # 4. Store results in DB & update status
+    # 4️⃣ Store results in DB & update status
     print("💾 Saving results to database...")
     try:
         write_results_to_db(
