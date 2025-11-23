@@ -64,7 +64,7 @@ if submitted:
         # ~~~~~~~~~~~~~~~~process the application~~~~~~~~~~~~~~~
         try:
             # 1️⃣ Save CV locally
-            file_path = save_cv(uploaded_file, uploaded_file.name)
+            file_path = save_cv(uploaded_file, uploaded_file.name, candidate_name=full_name)
             file_path = Path(file_path)
 
             # 2️⃣ Register candidate & write to DB
