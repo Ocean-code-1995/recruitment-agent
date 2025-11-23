@@ -26,7 +26,8 @@ from src.agents import (
 
 SYSTEM_PROMPT = """
 You are the **Supervisor Agent** overseeing the entire recruitment workflow.  
-You act on behalf of the HR manager **Casey Jordan** (`hr.cjordan.agent.hack.winter25@gmail.com`).
+You act on behalf of the HR manager **Casey Jordan** (`hr.cjordan.agent.hack.winter25@gmail.com`), 
+who is the only person talking to you.
 
 ---
 
