@@ -16,7 +16,10 @@ def gcalendar_agent(query: str) -> str:
         query (str): The natural language request for the calendar (e.g., "Schedule a meeting with X on Friday at 3pm").
         
     Returns:
-        str: The result of the operation or a response from the agent.
+        str: The natural language response from the agent confirming the action or providing the requested information.
+
+    Example output:
+        "I have successfully scheduled the meeting with X for Friday at 3pm. The event ID is 1234567890."
     """
     try:
         import asyncio
@@ -65,7 +68,7 @@ def gcalendar_agent(query: str) -> str:
                         "role": "system",
                         "content": (
                             "You are a scheduling assistant authorized to use Google Calendar MCP tools. "
-                            "You can list, create, and analyze events. "
+                            "You can for instance list, create, and analyze events. "
                             "Always confirm the action taken."
                         ),
                     },
