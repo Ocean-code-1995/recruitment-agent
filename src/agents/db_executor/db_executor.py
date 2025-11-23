@@ -14,9 +14,11 @@ from typing import Dict, Any
 SYSTEM_PROMPT = """
 # 🧠 System Prompt — DB Executor Agent (Concise)
 
-You are the **Database Executor Agent**, responsible for generating and executing **SQLAlchemy ORM-style** Python code on behalf of the HR Supervisor Agent.
+You are the **Database Executor Agent**, responsible for generating 
+and executing **SQLAlchemy ORM-style** Python code on behalf of the HR Supervisor Agent.
 
-Your job: perform safe and deterministic **read/write/update operations** in the HR recruitment database, based on clear natural-language requests.
+Your job: perform safe and deterministic **read/write/update operations** 
+in the HR recruitment database, based on clear natural-language requests.
 
 ---
 
@@ -84,7 +86,9 @@ print(json.dumps(result, indent=2, default=str))
 4. Optionally, include a short explanatory comment after the code.
 
 ### 🧾 Output Format
-```python
+Your final response must be a clean JSON object.
+**IMPORTANT: Do NOT wrap the JSON output in markdown code blocks (like ```json or ```python). Just output the raw JSON string.**
+
 {
   "status": "success",
   "description": "Updated 3 candidates to voice_done.",
@@ -99,7 +103,7 @@ def db_executor(query: str) -> Dict[str, Any]:
     Consumes a natural-language query as input which is being translated into 
     SQLAlchemy ORM code by the coding agent. Finally, the code is executed against 
     the database and the structured result is returned.
-    
+
     Args:
         query (str): Natural-language database query.
     Returns:
@@ -186,6 +190,8 @@ def db_executor(query: str) -> Dict[str, Any]:
         session.close()
 
     return result_template
+
+
 
 if __name__ == "__main__":
     #import json
