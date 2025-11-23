@@ -23,6 +23,11 @@ In my last run it listed an additional tool called `Multi-Tool Use (multi_tool_u
 ```text
 >>> Please schedule an interview for that person for this friday 2pm and then notfiy the applicant that he has an personal interview at that time and shall mark it in his calendar.
 
+>>> Please schedule an interview in our hr calendar that candidate x will have an person-to-person interview. Also notofy both hr and the applicant by email and send ***calendar invitation** to the candidate!
+
+
+>>> Please check in our HR calendar what days havee available slots for an 1h interview. Once we found we foun that out we suggest the candidate the available time slots. Once he agrees to one slot we can schedule that agreed slot. 
+
 >>> Can you please send an calendar invite to that person for this friday 2pm and to HR as well?
 
 >>>
