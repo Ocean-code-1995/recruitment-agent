@@ -8,4 +8,3 @@ The scores should be based on the following criteria:
     3. Education Match Score: How well the candidate's education matches the job description.
     4. Overall Fit Score: How well the candidate's CV fits the job description.
 
-NOTE: If an error occurs report it back for transparency and troubleshooting.
