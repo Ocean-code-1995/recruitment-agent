@@ -1,6 +1,15 @@
 ## ***`Example Queries`***
 ---
 
+### ***`Tool Availabiity`***
+
+Use the following prompt to see if it cann see the tools atatched to the agent without having to mention in systemn prompt, since when passing the tools as list in `create_agent`it alkready takes care of that.
+```text
+hey what tools do you have avialable? please give comprehensive info and overview
+```
+**NOTE** 
+In my last run it listed an additional tool called `Multi-Tool Use (multi_tool_use.parallel)`. This is NOT a real tool in the codebase but an internal OpenAI artifact representing the model's capability to call multiple tools in parallel. It can be ignored.
+
 ### ***`Already working:`***
 ```text
 >>> Hey is there any candidates in our databse?
