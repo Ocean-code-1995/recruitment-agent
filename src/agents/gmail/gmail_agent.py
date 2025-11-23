@@ -24,7 +24,10 @@ def gmail_agent(query: str) -> str:
         query (str): The natural language request (e.g., "Send an email to X", "Check unread emails").
         
     Returns:
-        str: The result of the operation or a response from the agent.
+        str: The natural language response from the agent confirming the action or providing the requested information.
+
+    Example output:
+        "I have successfully sent the email to X with the subject 'Interview Invitation'."
     """
     if not UV_PATH:
         return "❌ Error: 'uv' executable not found. Please ensure uv is installed and in the system PATH."
@@ -72,8 +75,8 @@ def gmail_agent(query: str) -> str:
                     {
                         "role": "system",
                         "content": (
-                            "You are an automated agent authorized to use Gmail MCP tools. "
-                            "You can read, search, create drafts, and send emails. "
+                            "You are an agent authorized to use Gmail MCP tools. "
+                            "You can for instance read, search, create drafts, and send emails. "
                             "When asked to send an email, always confirm the details before sending if ambiguous, "
                             "but if the instruction is clear, proceed."
                         ),
