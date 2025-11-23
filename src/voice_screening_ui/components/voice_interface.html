@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .mic-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: none;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #4CAF50;
+            color: white;
+        }
+        .mic-button:hover {
+            transform: scale(1.1);
+        }
+        .mic-button:active {
+            transform: scale(0.95);
+            background-color: #45a049;
+        }
+        .mic-button.recording {
+            background-color: #f44336;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.recording {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        #errorMessage {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #fee;
+            border: 1px solid #fcc;
+            border-radius: 5px;
+            color: #c33;
+        }
+        #debugInfo {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .debug-toggle {
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+            text-decoration: underline;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button id="micButton" class="mic-button" disabled>🎤</button>
+        <p id="micButtonLabel">Click to start recording</p>
+
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div id="errorMessage" style="display: none;">
+            <strong>⚠️ Connection Error:</strong> <span id="errorText"></span>
+        </div>
+        
+        <div class="debug-toggle" onclick="toggleDebug()">🔍 Toggle Debug Info</div>
+        <div id="debugInfo" style="display: none;">
+            <strong>Debug Info:</strong>
+            <div id="debugText"></div>
+        </div>
+        
+        <div id="transcript" style="margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 100px; max-height: 200px; overflow-y: auto;">
+            <p><em>Transcript will appear here...</em></p>
+        </div>
+    </div>
+
+    <script>
+        const SESSION_ID = "{{SESSION_ID}}";
+        const API_KEY = "{{API_KEY}}";
+        // Use WebSocket proxy instead of direct OpenAI connection
+        // Browsers cannot set custom headers, so we proxy through backend
+        const PROXY_URL = "{{PROXY_URL}}";  // Will be replaced by Streamlit
+        const REALTIME_API_URL = PROXY_URL || "ws://localhost:8000/ws/realtime";
+        
+        let ws = null;
+        let mediaRecorder = null;
+        let audioContext = null;  // For recording
+        let playbackAudioContext = null;  // For playing back agent audio
+        let isRecording = false;
+        let audioChunks = [];
+        let transcript = [];
+        let mediaStream = null;
+        let audioProcessor = null;
+        let audioSource = null;
+        let hasAudioData = false;
+        let commitTimeout = null;
+        let audioQueue = [];  // Queue for audio chunks
+        let isPlayingAudio = false;
+        
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            clearDebugInfo();
+            hideError();
+            
+            if (!API_KEY) {
+                const errorMsg = "API key not found. Please check your environment configuration.";
+                showError(errorMsg);
+                updateStatus("Error: API key not found", "disconnected");
+                addDebugInfo("API Key Check", "API_KEY is empty or undefined");
+                return;
+            }
+            
+            updateStatus("Connecting...", "disconnected");
+            addDebugInfo("Connection Attempt", `Connecting to: ${REALTIME_API_URL}`);
+            addDebugInfo("API Key", API_KEY ? `${API_KEY.substring(0, 10)}...` : "Not set");
+            
+            // Connect through WebSocket proxy (handles authentication server-side)
+            // Direct OpenAI connection won't work from browser due to header limitations
+            addDebugInfo("Connection Method", "Using WebSocket proxy for authentication");
+            addDebugInfo("Proxy URL", REALTIME_API_URL);
+            
+            try {
+                addDebugInfo("WebSocket Creation", "Attempting to create WebSocket connection to proxy...");
+                ws = new WebSocket(REALTIME_API_URL);
+            } catch (error) {
+                const errorMsg = `Failed to create WebSocket: ${error.message}. Make sure the proxy server is running on ${REALTIME_API_URL}`;
+                showError(errorMsg);
+                addDebugInfo("WebSocket Creation Error", error.toString());
+                return;
+            }
+            
+            ws.onopen = () => {
+                updateStatus("Connected", "connected");
+                document.getElementById("micButton").disabled = false;
+                hideError();
+                addDebugInfo("Connection Success", "WebSocket connection established successfully");
+                
+                // Send session configuration
+                // Note: This requires proper authentication via WebSocket proxy
+                // For MVP, authentication should be handled server-side
+                ws.send(JSON.stringify({
+                    type: "session.update",
+                    session: {
+                        modalities: ["audio", "text"],
+                        instructions: "You are a friendly HR assistant conducting a phone screening interview. Greet the candidate warmly and ask them about their background and interest in the position.",
+                        voice: "alloy",
+                        input_audio_format: "pcm16",
+                        output_audio_format: "pcm16",
+                        turn_detection: {
+                            type: "server_vad",
+                            threshold: 0.5,
+                            prefix_padding_ms: 300,
+                            silence_duration_ms: 10000
+                        }
+                    }
+                }));
+                
+                // Send greeting after session is configured
+                setTimeout(() => {
+                    ws.send(JSON.stringify({
+                        type: "response.create",
+                        response: {
+                            modalities: ["audio", "text"],
+                            instructions: "Greet the candidate and ask them to tell you about themselves."
+                        }
+                    }));
+                }, 1000);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Handle proxy status/error messages
+                    if (data.type === "proxy.status") {
+                        addDebugInfo("Proxy Status", data.message || data.status);
+                        if (data.status === "connected") {
+                            hideError();
+                        }
+                    } else if (data.type === "proxy.error") {
+                        const errorMsg = `Proxy Error (${data.source || 'unknown'}): ${data.error || 'Unknown error'}`;
+                        showError(errorMsg);
+                        addDebugInfo("Proxy Error", JSON.stringify(data, null, 2));
+                        if (data.traceback) {
+                            addDebugInfo("Traceback", data.traceback);
+                        }
+                    } else {
+                        // Normal OpenAI Realtime API message
+                        handleRealtimeMessage(data);
+                    }
+                } catch (error) {
+                    console.error("Error parsing message:", error);
+                    addDebugInfo("Parse Error", `Failed to parse message: ${error.message}`);
+                    addDebugInfo("Raw Message", event.data.substring(0, 200));
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                const errorMsg = "WebSocket connection failed. This may be due to authentication issues (browsers don't support custom headers in WebSocket connections).";
+                showError(errorMsg);
+                updateStatus("Connection error", "disconnected");
+                addDebugInfo("WebSocket Error", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+            };
+            
+            ws.onclose = (event) => {
+                let closeReason = "Unknown reason";
+                let errorExplanation = "";
+                
+                if (event.code === 3000) {
+                    closeReason = "Invalid request error";
+                    errorExplanation = "This usually means the request format is invalid. If connecting directly to OpenAI, browsers cannot authenticate (they don't support custom headers in WebSocket connections). Use the WebSocket proxy instead.";
+                } else if (event.code === 1006) {
+                    closeReason = "Abnormal closure - connection lost";
+                    errorExplanation = "Connection was lost unexpectedly. This could be due to authentication failure, network issues, or server-side problems.";
+                } else if (event.code === 1002) {
+                    closeReason = "Protocol error";
+                    errorExplanation = "The WebSocket protocol encountered an error. Check that you're using the correct endpoint.";
+                } else if (event.code === 1003) {
+                    closeReason = "Unsupported data";
+                    errorExplanation = "The server received data it cannot process. Check message format.";
+                } else if (event.code === 1008) {
+                    closeReason = "Policy violation";
+                    errorExplanation = "Connection closed due to policy violation (e.g., authentication/authorization failure).";
+                } else if (event.code === 1011) {
+                    closeReason = "Server error";
+                    errorExplanation = "The server encountered an error. Check proxy server logs.";
+                } else if (event.code === 1000) {
+                    closeReason = "Normal closure";
+                    // Don't show error for normal closure
+                }
+                
+                if (event.code !== 1000) { // 1000 is normal closure
+                    const fullError = `${closeReason} (Code: ${event.code})${errorExplanation ? '. ' + errorExplanation : ''}`;
+                    showError(fullError);
+                    addDebugInfo("Close Event", `Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}, WasClean: ${event.wasClean}`);
+                    if (errorExplanation) {
+                        addDebugInfo("Explanation", errorExplanation);
+                    }
+                }
+                
+                updateStatus("Disconnected", "disconnected");
+                document.getElementById("micButton").disabled = true;
+            };
+        }
+        
+        function handleRealtimeMessage(data) {
+            // Log all messages for debugging
+            addDebugInfo("Received Message", `Type: ${data.type || 'unknown'}`);
+            
+            switch (data.type) {
+                case "session.created":
+                    console.log("Session created:", data.session_id);
+                    addDebugInfo("Session Created", `Session ID: ${data.session_id || 'unknown'}`);
+                    break;
+                    
+                case "response.created":
+                    // New response starting - clear audio queue for clean playback
+                    audioQueue = [];
+                    isPlayingAudio = false;
+                    addDebugInfo("Response Created", "Cleared audio queue for new response");
+                    break;
+                    
+                case "response.audio_transcript.delta":
+                    // Partial transcription
+                    const delta = data.delta || "";
+                    updateTranscript("candidate", delta, true);
+                    break;
+                    
+                case "response.audio_transcript.done":
+                    // Complete transcription
+                    const text = data.text || "";
+                    updateTranscript("candidate", text, false);
+                    addDebugInfo("Transcript Complete", `Text: ${text.substring(0, 50)}...`);
+                    break;
+                    
+                case "response.audio.delta":
+                    // Audio response chunk - queue it for sequential playback
+                    if (data.delta) {
+                        queueAudioChunk(data.delta);
+                    } else {
+                        addDebugInfo("Audio Delta", "Received audio.delta with no delta data");
+                    }
+                    break;
+                    
+                case "response.audio.done":
+                    addDebugInfo("Audio Done", "Agent finished speaking");
+                    break;
+                    
+                case "response.text.delta":
+                    // Text response
+                    updateTranscript("agent", data.delta || "", true);
+                    break;
+                    
+                case "response.text.done":
+                    // Complete text response
+                    updateTranscript("agent", data.text || "", false);
+                    addDebugInfo("Agent Response", `Text: ${data.text || ''}`);
+                    break;
+                    
+                case "error":
+                    const errorMsg = data.message || "Unknown error";
+                    const errorCode = data.code || "unknown";
+                    console.error("Realtime API error:", data);
+                    showError(`OpenAI API Error (${errorCode}): ${errorMsg}`);
+                    updateStatus("Error: " + errorMsg, "disconnected");
+                    addDebugInfo("OpenAI API Error", JSON.stringify(data, null, 2));
+                    break;
+                    
+                default:
+                    // Log unknown message types for debugging
+                    addDebugInfo("Unknown Message Type", JSON.stringify(data, null, 2));
+                    console.log("Unknown message type:", data.type, data);
+            }
+        }
+        
+        function updateTranscript(speaker, text, isPartial) {
+            const transcriptDiv = document.getElementById("transcript");
+            
+            if (transcriptDiv.innerHTML.includes("<em>Transcript will appear here...</em>")) {
+                transcriptDiv.innerHTML = "";
+            }
+            
+            // Find or create speaker section
+            let speakerDiv = document.getElementById(`speaker-${speaker}`);
+            if (!speakerDiv) {
+                speakerDiv = document.createElement("div");
+                speakerDiv.id = `speaker-${speaker}`;
+                speakerDiv.style.marginBottom = "10px";
+                transcriptDiv.appendChild(speakerDiv);
+            }
+            
+            const label = speaker === "agent" ? "🤖 Agent" : "👤 You";
+            speakerDiv.innerHTML = `<strong>${label}:</strong> ${text}${isPartial ? "..." : ""}`;
+            
+            // Scroll to bottom
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        }
+        
+        // Queue audio chunk for sequential playback
+        function queueAudioChunk(base64Audio) {
+            if (!base64Audio) {
+                addDebugInfo("Audio Queue", "Received empty audio chunk, skipping");
+                return;
+            }
+            
+            audioQueue.push(base64Audio);
+            addDebugInfo("Audio Queue", `Queued audio chunk (queue length: ${audioQueue.length})`);
+            
+            // Start processing queue if not already playing
+            if (!isPlayingAudio) {
+                processAudioQueue();
+            }
+        }
+        
+        // Process audio queue sequentially
+        async function processAudioQueue() {
+            if (audioQueue.length === 0) {
+                isPlayingAudio = false;
+                return;
+            }
+            
+            isPlayingAudio = true;
+            const base64Audio = audioQueue.shift();
+            
+            try {
+                await playAudioChunk(base64Audio);
+                
+                // Process next chunk in queue after a small delay
+                // This ensures smooth sequential playback
+                setTimeout(() => {
+                    processAudioQueue();
+                }, 10);
+            } catch (err) {
+                console.error("Error processing audio queue:", err);
+                addDebugInfo("Audio Queue Error", `Failed to process: ${err.message}`);
+                // Continue with next chunk even if this one failed
+                processAudioQueue();
+            }
+        }
+        
+        async function playAudioChunk(base64Audio) {
+            // Initialize playback audio context if needed
+            if (!playbackAudioContext) {
+                playbackAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                addDebugInfo("Audio Context", `Created playback audio context: ${playbackAudioContext.state} (${playbackAudioContext.sampleRate}Hz)`);
+            }
+            
+            // Resume audio context if suspended (browser autoplay policy)
+            if (playbackAudioContext.state === 'suspended') {
+                await playbackAudioContext.resume();
+                addDebugInfo("Audio Context", "Resumed suspended audio context");
+            }
+            
+            // Decode base64 audio (PCM16 format from OpenAI)
+            // OpenAI Realtime API outputs PCM16 at 24kHz sample rate
+            const binaryString = atob(base64Audio);
+            const len = binaryString.length;
+            const numSamples = len / 2;
+            
+            // Convert binary string to Uint8Array properly
+            const uint8Array = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                uint8Array[i] = binaryString.charCodeAt(i) & 0xFF;  // Ensure byte value
+            }
+            
+            // Use DataView to read PCM16 little-endian samples correctly
+            const dataView = new DataView(uint8Array.buffer);
+            const pcm16Data = new Int16Array(numSamples);
+            for (let i = 0; i < numSamples; i++) {
+                // Read Int16 little-endian from DataView
+                pcm16Data[i] = dataView.getInt16(i * 2, true);  // true = little-endian
+            }
+            
+            // Convert PCM16 to Float32Array for Web Audio API
+            const float32Data = new Float32Array(pcm16Data.length);
+            for (let i = 0; i < pcm16Data.length; i++) {
+                // Convert PCM16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
+                float32Data[i] = Math.max(-1, Math.min(1, pcm16Data[i] / 32768.0));
+            }
+            
+            // OpenAI Realtime API uses 24kHz sample rate for PCM16 output
+            const inputSampleRate = 24000;
+            const outputSampleRate = playbackAudioContext.sampleRate;
+            
+            let audioBuffer;
+            if (inputSampleRate === outputSampleRate) {
+                // No resampling needed
+                audioBuffer = playbackAudioContext.createBuffer(1, float32Data.length, outputSampleRate);
+                audioBuffer.getChannelData(0).set(float32Data);
+            } else {
+                // Use OfflineAudioContext for accurate resampling
+                const offlineContext = new OfflineAudioContext(1, Math.round(float32Data.length * outputSampleRate / inputSampleRate), outputSampleRate);
+                
+                // Create source buffer at input sample rate
+                const sourceBuffer = offlineContext.createBuffer(1, float32Data.length, inputSampleRate);
+                sourceBuffer.getChannelData(0).set(float32Data);
+                
+                // Create source node and connect to destination
+                const source = offlineContext.createBufferSource();
+                source.buffer = sourceBuffer;
+                source.connect(offlineContext.destination);
+                source.start(0);
+                
+                // Render to get resampled audio
+                audioBuffer = await offlineContext.startRendering();
+            }
+            
+            // Play the audio and wait for it to finish
+            return new Promise((resolve, reject) => {
+                try {
+                    const source = playbackAudioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(playbackAudioContext.destination);
+                    
+                    // Resolve promise when playback finishes
+                    source.onended = () => {
+                        resolve();
+                    };
+                    
+                    source.onerror = (err) => {
+                        reject(err);
+                    };
+                    
+                    source.start();
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+        
+        function updateStatus(message, className) {
+            const statusDiv = document.getElementById("status");
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${className}`;
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById("errorMessage");
+            const errorText = document.getElementById("errorText");
+            errorText.textContent = message;
+            errorDiv.style.display = "block";
+        }
+        
+        function hideError() {
+            const errorDiv = document.getElementById("errorMessage");
+            errorDiv.style.display = "none";
+        }
+        
+        function addDebugInfo(label, info) {
+            const debugDiv = document.getElementById("debugInfo");
+            const debugText = document.getElementById("debugText");
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Truncate very long messages
+            const displayInfo = typeof info === 'string' && info.length > 500 
+                ? info.substring(0, 500) + '...' 
+                : info;
+            
+            debugText.innerHTML += `<div><strong>[${timestamp}] ${label}:</strong> <pre style="margin: 2px 0; white-space: pre-wrap; word-break: break-all;">${escapeHtml(String(displayInfo))}</pre></div>`;
+            debugDiv.style.display = "block";
+            
+            // Auto-scroll to bottom
+            debugText.scrollTop = debugText.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function clearDebugInfo() {
+            const debugText = document.getElementById("debugText");
+            debugText.innerHTML = "";
+        }
+        
+        function toggleDebug() {
+            const debugDiv = document.getElementById("debugInfo");
+            debugDiv.style.display = debugDiv.style.display === "none" ? "block" : "none";
+        }
+        
+        // Microphone button handlers - toggle recording on click
+        const micButton = document.getElementById("micButton");
+        const micButtonLabel = document.getElementById("micButtonLabel");
+        
+        micButton.addEventListener("click", toggleRecording);
+        
+        function toggleRecording() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addDebugInfo("Recording Error", "WebSocket not connected");
+                return;
+            }
+            
+            if (isRecording) {
+                // Stop recording and send
+                stopRecording();
+            } else {
+                // Start recording
+                startRecording();
+            }
+        }
+        
+        async function startRecording() {
+            if (isRecording) return;
+            
+            // Initialize playback audio context on user interaction (required by browsers)
+            initPlaybackAudioContext();
+            
+            try {
+                // Reset audio tracking
+                hasAudioData = false;
+                
+                // Clear any pending commit timeout
+                if (commitTimeout) {
+                    clearTimeout(commitTimeout);
+                    commitTimeout = null;
+                }
+                
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioSource = audioContext.createMediaStreamSource(mediaStream);
+                audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                
+                audioProcessor.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+                    
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    const pcm16 = new Int16Array(inputData.length);
+                    
+                    for (let i = 0; i < inputData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    
+                    // Convert to base64
+                    const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+                    
+                        // Send to OpenAI Realtime API
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                type: "input_audio_buffer.append",
+                                audio: base64
+                            }));
+                            hasAudioData = true;
+                            // Don't commit automatically - only commit when recording is stopped
+                        }
+                };
+                
+                audioSource.connect(audioProcessor);
+                audioProcessor.connect(audioContext.destination);
+                
+                isRecording = true;
+                micButton.classList.add("recording");
+                micButtonLabel.textContent = "Click again to stop and send";
+                updateStatus("Recording...", "recording");
+                addDebugInfo("Recording Started", "Microphone access granted, starting audio capture");
+                
+            } catch (error) {
+                console.error("Error accessing microphone:", error);
+                updateStatus("Microphone access denied", "disconnected");
+                addDebugInfo("Microphone Error", `Failed to access microphone: ${error.message}`);
+            }
+        }
+        
+        function stopRecording() {
+            if (!isRecording) return;
+            
+            isRecording = false;
+            micButton.classList.remove("recording");
+            micButtonLabel.textContent = "Click to start recording";
+            updateStatus("Connected", "connected");
+            
+            // Clear pending commit timeout
+            if (commitTimeout) {
+                clearTimeout(commitTimeout);
+                commitTimeout = null;
+            }
+            
+            // Clean up audio resources
+            if (audioProcessor) {
+                try {
+                    audioProcessor.disconnect();
+                } catch (e) {
+                    console.warn("Error disconnecting processor:", e);
+                }
+                audioProcessor = null;
+            }
+            
+            if (audioSource) {
+                try {
+                    audioSource.disconnect();
+                } catch (e) {
+                    console.warn("Error disconnecting source:", e);
+                }
+                audioSource = null;
+            }
+            
+            if (mediaStream) {
+                try {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                } catch (e) {
+                    console.warn("Error stopping tracks:", e);
+                }
+                mediaStream = null;
+            }
+            
+            // Only commit if we actually have audio data
+            // Wait a bit to ensure all audio chunks have been sent
+            if (hasAudioData && ws && ws.readyState === WebSocket.OPEN) {
+                // Wait for audio processing to finish (at least 100ms as required by API)
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "input_audio_buffer.commit"
+                        }));
+                        addDebugInfo("Audio Commit", "Committed audio buffer (final commit on stop)");
+                    }
+                }, 150);  // Increased delay to ensure enough audio is buffered
+            } else {
+                addDebugInfo("Recording Stopped", "No audio data captured, skipping commit");
+            }
+            
+            hasAudioData = false;
+        }
+        
+        // Initialize playback audio context on first user interaction (required by browsers)
+        function initPlaybackAudioContext() {
+            if (!playbackAudioContext) {
+                playbackAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                addDebugInfo("Audio Context", `Initialized playback audio context: ${playbackAudioContext.state}`);
+            }
+        }
+        
+        // Connect on load
+        window.addEventListener("load", () => {
+            connectWebSocket();
+            
+            // Initialize audio context on first user interaction
+            document.addEventListener("click", initPlaybackAudioContext, { once: true });
+            document.addEventListener("touchstart", initPlaybackAudioContext, { once: true });
+        });
+        
+        // Cleanup on unload
+        window.addEventListener("beforeunload", () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>
+

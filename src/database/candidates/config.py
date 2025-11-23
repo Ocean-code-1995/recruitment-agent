@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict  # ✅ preferred modern import
 from pydantic import Field, ValidationError
-from typing import Optional
 import sys
 
 class Settings(BaseSettings):

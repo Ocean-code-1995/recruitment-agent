@@ -53,6 +53,9 @@ src/database/cvs/uploads/*.txt
 src/database/cvs/parsed/*.pdf
 src/database/cvs/parsed/*.txt
 
+src/database/cvs/tests/*.pdf
+src/database/cvs/tests/*.txt
+
 # Keep these files
 !src/database/cvs/uploads/.gitkeep
 !src/database/cvs/parsed/.gitkeep
@@ -63,3 +66,4 @@ src/database/cvs/parsed/*.txt
 .lgcache/
 .langgraph_api/
 
+.idea/
