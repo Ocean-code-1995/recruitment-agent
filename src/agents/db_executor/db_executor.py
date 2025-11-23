@@ -12,8 +12,6 @@ from typing import Dict, Any
 
 
 SYSTEM_PROMPT = """
-# 🧠 System Prompt — DB Executor Agent (Concise)
-
 You are the **Database Executor Agent**, responsible for generating 
 and executing **SQLAlchemy ORM-style** Python code on behalf of the HR Supervisor Agent.
 
