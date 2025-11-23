@@ -8,6 +8,7 @@ from src.database.candidates.models import (
     FinalDecision,
 )
 from langchain_core.tools import tool
+from typing import Dict, Any
 
 
 SYSTEM_PROMPT = """
@@ -93,10 +94,26 @@ print(json.dumps(result, indent=2, default=str))
 
 
 @tool
-def db_executor(query: str) -> dict:
+def db_executor(query: str) -> Dict[str, Any]:
     """
-    Consumes a natural-language query and executes it through the CodeActAgent.
-    Returns the structured result (dict).
+    Consumes a natural-language query as input which is being translated into 
+    SQLAlchemy ORM code by the coding agent. Finally, the code is executed against 
+    the database and the structured result is returned.
+    
+    Args:
+        query (str): Natural-language database query.
+    Returns:
+        Dict[str, Any]: The structured result.
+
+    Example output:
+    {
+        "status": "success",
+        "query": "Fetch all candidates with cv_screened status.",
+        "result": "[{...}, {...}, ...]",  # JSON-serializable result
+        "error": None,
+        "context_vars": {...},  # any relevant context variables
+        "debug_messages": [...],  # any debug/info messages
+    }
     """
     # 1. Initialize DB session and ORM context
     session = SessionLocal()
