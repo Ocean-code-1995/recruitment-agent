@@ -3,14 +3,15 @@ These queries / tests are used to test how well the supervisor agent performs by
 
 ## 1. Run CV screening for a newly uploaded candidate
 ### Query
-"Please screen this new applicant and update their status accordingly."
+"Please screen the new applicant and update their status accordingly."
 ### Expected behavior
 Supervisor identifies that the candidate is in a state requiring CV screening.  
 Supervisor delegates the work to the CV Screening agent.  
 CV Screening agent parses the CV, scores it, determines pass or fail, and writes results into the database via the DB Executor.  
 Supervisor waits for the tool output and then reports the updated status without performing the screening itself.
 ### Notes / issues
-TODO
+- The supervisor asks for the name of the applicant. Instead it should have automatically delegated it to the DB Executor. It needs to be less reliant on the user for something this trivial.
+- The DB agent keeps trying to get a file at src\database\cvs\parsed\1dd5c1f2-737e-430f-9747-8b77d60219f3_SWefers_CV.txt. That path doesn't exist. Something is confusing it on which path the CVs are at.
 
 ---
 
@@ -23,13 +24,13 @@ Supervisor routes each candidate to the CV Screening agent using isolated per ca
 Each CV Screening agent run updates the database through DB Executor.  
 Supervisor receives aggregated outcomes and summarizes them for HR.
 ### Notes / issues
-TODO
+TODO when Gmail works fine. Fix DB Executor as well.
 
 ---
 
 ## 3. Notify a passed candidate and request time slots
 ### Query
-"This candidate passed screening. Notify them and ask for their availability."
+"This candidate X passed screening. Notify them and ask for their availability."
 ### Expected behavior
 Supervisor detects that the candidate is in a screened_passed state.  
 Supervisor delegates email sending to the Gmail Agent.  
@@ -51,7 +52,9 @@ Gmail Agent sends a rejection email using Gmail MCP.
 DB Executor updates status to rejected.  
 Supervisor returns a clean confirmation.
 ### Notes / issues
-TODO
+- Gmail has issue without using `--allow-blocking` when launching `langgraph dev`. But this also breaks the database.
+- Gmail agent kept asking multiple times whether info was correct, even after being told yes. It needs
+to just do what it is told.
 
 ---
 
@@ -64,7 +67,7 @@ Supervisor formats the report for HR.
 No state transitions occur.  
 No subagent beyond DB Executor is involved.
 ### Notes / issues
-TODO
+- Worked correctly without issues.
 
 ---
 
@@ -78,7 +81,7 @@ Calendar Agent uses the Calendar MCP to match candidate availability with HR cal
 DB Executor updates the status to interview_scheduled.  
 Supervisor reports the scheduled event.
 ### Notes / issues
-TODO
+TODO when Gmail works fine.
 
 ---
 
@@ -92,7 +95,7 @@ All work is executed per candidate thread.
 DB Executor performs all writes.  
 Supervisor produces a summary of completed actions.
 ### Notes / issues
-TODO
+- Got lots of database errors and missing CVs (the CVs should be in the DB, they're in the files). The DB Executor needs to have clearer instructions for how to use it, and be more persistant. It cannot give up if it fails once.
 
 ---
 
@@ -105,7 +108,7 @@ Supervisor routes to the CV Screening agent or dedicated parser if available.
 Parser extracts structured data and writes it to the DB via DB Executor.  
 Supervisor leaves candidate in the correct state without triggering screening logic.
 ### Notes / issues
-TODO
+- Worked without issues.
 
 ---
 
@@ -119,7 +122,7 @@ Gmail Agent sends the email through Gmail MCP.
 DB Executor records that a follow up was sent.  
 Supervisor confirms the action.
 ### Notes / issues
-TODO
+TODO when Gmail works fine.
 
 ---
 
@@ -133,4 +136,4 @@ Supervisor routes to the appropriate subagent for that specific step.
 Subagent performs the atomic action and DB Executor persists the update.  
 Supervisor does not repeat completed steps or skip steps.
 ### Notes / issues
-TODO
+- It worked fine, but it took many attempts to set info in the database. Maybe more clear explanation is needed.

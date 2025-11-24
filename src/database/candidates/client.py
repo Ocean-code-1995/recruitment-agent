@@ -17,7 +17,8 @@ def get_engine():
     settings = load_settings()
 
     # Allow POSTGRES_HOST override (Docker will set it to 'db')
-    postgres_host = os.getenv("POSTGRES_HOST", settings.POSTGRES_HOST)
+    # Strip whitespace to avoid DNS resolution issues on Windows
+    postgres_host = os.getenv("POSTGRES_HOST", settings.POSTGRES_HOST).strip()
     database_url = (
         f"postgresql+psycopg2://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
         f"@{postgres_host}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
