@@ -117,10 +117,8 @@ A key invariant across all phases:
 ```text
 # Candidate Checklist — ID 123
 
-- [ ] CV uploaded
-- [ ] CV parsed and stored
-- [ ] CV screening started
-- [ ] CV screening completed
+- [ ] CV uploaded, parsed and stored
+- [ ] CV screening (pass / fail)
 - [ ] Screening results notified to candidate & HR
 - [ ] Asked candidate for available time slots
 - [ ] Received candidate availability
