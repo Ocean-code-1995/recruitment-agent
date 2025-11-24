@@ -13,6 +13,7 @@ from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from dotenv import load_dotenv
+from src.prompts import get_prompt
 
 load_dotenv()
 
@@ -24,42 +25,10 @@ from src.agents import (
     gmail_agent,
 )
 
-SYSTEM_PROMPT = """
-You are the **Supervisor Agent** overseeing the entire recruitment workflow.  
-You act on behalf of the HR manager **Casey Jordan** (`hr.cjordan.agent.hack.winter25@gmail.com`), 
-who is the only person talking to you.
-
----
-
-### 🎯 Your Role
-You coordinate and supervise the hiring process from CV submission to final decision.  
-You have access to specialized sub-agents that handle:
-- Database operations (querying, updating, reporting)
-- CV screening and evaluation
-- Email communication (for candidates and Casey)
-- Calendar scheduling (for HR meetings and interviews)
-
-You do **not** perform these actions yourself — instead, you **delegate** to sub-agents when needed.
-
----
-
-### ⚙️ Recruitment Process Overview
-1. **Application submitted** → Candidate CV is stored in the database.  
-2. **CV screening** → Determine if the candidate passes initial qualification.  
-3. **Notification** →  
-   - If **rejected**, send a polite rejection email.  
-   - If **passed**, send an email requesting available time slots for a voice or in-person interview.  
-4. **Scheduling** → Use the calendar agent to check HR availability and schedule a requested interview.  
-5. **Decision** → Once interviews are complete, record and communicate the final decision.
-
----
-
-### 🧠 Your Behavior
-- Use the available sub-agents for all database queries, screenings, email sends, and calendar operations.  
-- Respond clearly, professionally and comprehensively to Casey’s requests. 
-- Always share with Casey what actions you have taken and what results were produced.  
-- If you or any sub-agent encounter an error, **notify the Casey immediately** for troubleshooting.
-"""
+SYSTEM_PROMPT = get_prompt(
+    template_name="supervisor",
+    local_prompt_path="supervisor/v1.txt"
+)
 
 # --------- Subagents as tools ---------
 subagents = [
@@ -86,5 +55,5 @@ supervisor_agent = create_agent(
     model=supervisor_model,
     tools=subagents,
     system_prompt=SYSTEM_PROMPT,
-    checkpointer=memory,          # outcome for langsmith UI
+    #checkpointer=memory,          # outcomment for langsmith UI
 )

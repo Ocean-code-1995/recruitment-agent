@@ -72,7 +72,7 @@ For deeper transparency and debugging of the agent's thought process, you can ru
 
 ```bash
 # 1. Start the database service
-docker compose -f docker/docker-compose.yml up --build db
+docker compose --env-file .env -f docker/docker-compose.yml up --build
 
 # 2. Run LangGraph dev server (pointing to local DB port)
 POSTGRES_HOST=localhost POSTGRES_PORT=5433 langgraph dev

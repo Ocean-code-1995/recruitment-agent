@@ -4,8 +4,6 @@ Run as follows:
 >>> docker compose up --build
 >>> docker compose run --rm candidates_db_init python -m src.agents.cv_screening.screener
 """
-
-
 import json
 from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage
@@ -13,9 +11,14 @@ from langchain.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 from src.agents.cv_screening.schemas.output_schema import CVScreeningOutput
 from src.agents.cv_screening.utils import read_file, write_results_to_db
+from src.prompts import get_prompt
 
 load_dotenv()
 
+SYSTEM_PROMPT = get_prompt(
+    template_name="cv_screener",
+    local_prompt_path="cv_screener/v1.txt"
+)
 
 
 
@@ -33,9 +36,9 @@ def screen_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
         Makes model write feedback before scoring, leading to better calibration
         and genuine reasoning that leads to more balanced scores.
 
-        **NOTE**: 
-        >>> The model generates feedback first (Chain-of-Thought) 
-        >>> to ensure calibrated scores.
+    **NOTE**: 
+    >>> The model generates feedback first (Chain-of-Thought) 
+    >>> to ensure calibrated scores.
 
     """
     llm = (
@@ -46,20 +49,11 @@ def screen_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
         )
         .with_structured_output(CVScreeningOutput)
     )
-
+    # payload
     messages = [
         # Instruction
         SystemMessage(
-            content=(
-                "You are an HR assistant evaluating how well a candidate's CV matches a given job description. "
-                "Generate a concise assessment summary first to ground your reasoning. "
-                "Then assign calibrated match scores between 0 and 1. "
-                "The scores should be based on the following criteria: "
-                "   1. Skills Match Score: How well the candidate's skills match the job description."
-                "   2. Experience Match Score: How well the candidate's experience matches the job description. "
-                "   3. Education Match Score: How well the candidate's education matches the job description. "
-                "   4. Overall Fit Score: How well the candidate's CV fits the job description. "
-            )
+            content=SYSTEM_PROMPT
         ),
         # Payload
         HumanMessage(

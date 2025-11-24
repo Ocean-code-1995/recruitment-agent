@@ -5,6 +5,13 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from src.mcp_servers.examples.gcalendar.settings import GoogleCalendarSettings
+from src.prompts import get_prompt
+
+
+SYSTEM_PROMPT = get_prompt(
+    template_name="gcalendar",
+    local_prompt_path="gcalendar/v1.txt"
+)
 
 @tool
 def gcalendar_agent(query: str) -> str:
@@ -66,11 +73,7 @@ def gcalendar_agent(query: str) -> str:
                 "messages": [
                     {
                         "role": "system",
-                        "content": (
-                            "You are a scheduling assistant authorized to use Google Calendar MCP tools. "
-                            "You can for instance list, create, and analyze events. "
-                            "Always confirm the action taken."
-                        ),
+                        "content": SYSTEM_PROMPT,
                     },
                     {
                         "role": "user",

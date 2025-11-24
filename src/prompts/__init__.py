@@ -29,15 +29,24 @@ def get_prompt(
     - A local file (if local_prompt_path is provided)
     - PromptLayer (default)
 
-    Args:
-        template_name: Name of the prompt template
-        version: PromptLayer version
-        label: Environment label for PromptLayer
-        local_prompt_path: Path to local file or directory containing prompt
-
-    Returns:
-        str: Prompt content
+    Strategy:
+    - If local_prompt_path is explicitly passed, use it (Highest priority).
+    - If PROMPTLAYER_API_KEY is set, assume we want Remote (local_prompt_path=None).
+    - If NO API key, fallback to default local TEMPLATES_DIR.
     """
+    if local_prompt_path:
+        # If path is relative, assume it is inside templates/ directory
+        if not os.path.isabs(local_prompt_path):
+            local_prompt_path = os.path.join(TEMPLATES_DIR, local_prompt_path)
+    else:
+        # No path provided
+        if os.getenv("PROMPTLAYER_API_KEY"):
+            # User has API key -> Use Remote (pass None)
+            local_prompt_path = None
+        else:
+            # No API key -> Force Local Default
+            local_prompt_path = TEMPLATES_DIR
+
     return _prompt_manager.get_prompt(
         template_name=template_name,
         version=version,

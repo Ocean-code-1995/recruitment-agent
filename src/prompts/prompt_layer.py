@@ -87,7 +87,7 @@ class PromptManager:
                     file_path = local_prompt_path
 
                 with open(file_path, "r", encoding="utf-8") as f:
-                    print(f"📄 Loaded prompt '{template_name}' from local file: {file_path}")
+                    print(f"📄 Loaded prompt '{template_name}' from local file: {file_path}", flush=True)
                     return f.read()
 
             except Exception as e:
@@ -111,7 +111,11 @@ class PromptManager:
                 else:
                     prompt_content = str(response)
 
-                print(f"📋 Loaded prompt '{template_name}' from PromptLayer (env={label})")
+                print(
+                    f"📋 Loaded prompt '{template_name}' from PromptLayer (env={label})",
+                    flush=True # force the output to the buffer immediately, 
+                               # ensuring it shows up in the docker compose log stream immediately.
+                )
                 return prompt_content
 
             except Exception as e:

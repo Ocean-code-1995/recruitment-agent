@@ -6,6 +6,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from src.mcp_servers.examples.gmail.settings import GMailSettings
+from src.prompts import get_prompt
 
 
 # Attempt to find uv executable
@@ -13,6 +14,12 @@ from src.mcp_servers.examples.gmail.settings import GMailSettings
 # `Dockerfile.supervisor` installs uv in the base image in `/usr/local/bin/uv`
 # `which` attempts to find it in the system PATH and returns the full path to it.
 UV_PATH = shutil.which("uv")
+
+
+SYSTEM_PROMPT = get_prompt(
+    template_name="gmail",
+    local_prompt_path="gmail/v1.txt"
+)
 
 @tool
 def gmail_agent(query: str) -> str:
@@ -74,12 +81,7 @@ def gmail_agent(query: str) -> str:
                 "messages": [
                     {
                         "role": "system",
-                        "content": (
-                            "You are an agent authorized to use Gmail MCP tools. "
-                            "You can for instance read, search, create drafts, and send emails. "
-                            "When asked to send an email, always confirm the details before sending if ambiguous, "
-                            "but if the instruction is clear, proceed."
-                        ),
+                        "content": SYSTEM_PROMPT,
                     },
                     {
                         "role": "user",
