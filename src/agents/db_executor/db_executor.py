@@ -10,6 +10,7 @@ from src.database.candidates.models import (
 from langchain_core.tools import tool
 from typing import Dict, Any
 from src.prompts import get_prompt
+from src.agents.cv_screening.utils.db import evaluate_cv_screening_decision
 
 
 SYSTEM_PROMPT = get_prompt(
@@ -46,10 +47,10 @@ def db_executor(query: str) -> str:
         agent = CodeActAgent(
             model_name="gpt-4o",
             model_provider="openai",
-            tools=[],
+            tools=[evaluate_cv_screening_decision],  # Passed as a tool
             eval_fn=CodeActAgent.default_eval,
             system_prompt=SYSTEM_PROMPT,
-            bind_tools=False,
+            bind_tools=True, # Enable tool binding so agent sees signature
             memory=False,   # optional — can enable if you want persistent thread context
         )
 
