@@ -1,3 +1,11 @@
+"""
+Run as follows:
+>>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python scripts/debug_db_connection.py
+
+This script tests the database connection and the session query.
+It also checks if the candidates table exists and if there are any candidates in the database.
+"""
+
 import sys
 import os
 from sqlalchemy import text
