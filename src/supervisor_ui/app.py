@@ -3,6 +3,8 @@ import sys
 import os
 import uuid
 from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
+
 
 # Load env vars
 load_dotenv()
@@ -11,7 +13,7 @@ load_dotenv()
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from src.agents.supervisor.supervisor_v2 import supervisor_agent
-from langchain_core.messages import HumanMessage, AIMessage
+from src.supervisor_ui.utils.token_counter import count_tokens_for_messages
 
 st.set_page_config(page_title="HR Supervisor Agent", layout="wide")
 
@@ -36,6 +38,12 @@ with st.sidebar:
     
     st.divider()
     st.caption(f"Chat ID:\n`{st.session_state.get('thread_id', 'Not set')}`")
+    
+    # Placeholder for token usage to allow dynamic updates
+    token_metric_placeholder = st.empty()
+    
+    if "token_usage" in st.session_state:
+        token_metric_placeholder.metric(label="Context Window Tokens", value=st.session_state.token_usage)
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -72,6 +80,14 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
                 # LangGraph returns the final state. We want the last AIMessage.
                 final_message = response["messages"][-1]
                 full_response = final_message.content
+                
+                # Calculate tokens for the FULL history (context window)
+                all_messages = response["messages"]
+                total_tokens = count_tokens_for_messages(all_messages)
+                st.session_state.token_usage = total_tokens
+                
+                # Update sidebar immediately
+                token_metric_placeholder.metric(label="Context Window Tokens", value=total_tokens)
                 
                 message_placeholder.markdown(full_response)
             except Exception as e:
