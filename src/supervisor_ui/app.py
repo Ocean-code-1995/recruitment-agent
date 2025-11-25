@@ -34,6 +34,7 @@ with st.sidebar:
     if st.button("Start New Chat", type="primary", use_container_width=True):
         st.session_state.messages = []
         st.session_state.thread_id = str(uuid.uuid4())[:8]
+        st.session_state.token_usage = 0
         st.rerun()
     
     st.divider()
