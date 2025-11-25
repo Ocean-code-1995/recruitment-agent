@@ -55,5 +55,5 @@ supervisor_agent = create_agent(
     model=supervisor_model,
     tools=subagents,
     system_prompt=SYSTEM_PROMPT,
-    #checkpointer=memory,          # outcomment for langsmith UI
+    checkpointer=memory,          # outcomment for langsmith UI
 )
