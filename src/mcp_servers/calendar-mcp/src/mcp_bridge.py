@@ -39,7 +39,7 @@ def create_mcp_server():
     # 2. find_events
     @mcp.tool()
     async def find_events_tool(
-        calendar_id: str,
+        calendar_id: str = "primary",
         time_min: Optional[str] = None,
         time_max: Optional[str] = None,
         query: Optional[str] = None,
@@ -61,10 +61,10 @@ def create_mcp_server():
     # 3. create_event
     @mcp.tool()
     async def create_event_tool(
-        calendar_id: str,
         summary: str,
         start_time: str,
         end_time: str,
+        calendar_id: str = "primary",
         description: Optional[str] = None,
         location: Optional[str] = None,
         attendee_emails: Optional[List[str]] = None,
@@ -86,7 +86,7 @@ def create_mcp_server():
 
     # 4. quick_add_event
     @mcp.tool()
-    async def quick_add_event_tool(calendar_id: str, text: str) -> str:
+    async def quick_add_event_tool(text: str, calendar_id: str = "primary") -> str:
         try:
             result = quick_add_event(calendar_id=calendar_id, text=text)
             return json.dumps(result, indent=2)
@@ -97,8 +97,8 @@ def create_mcp_server():
     # 5. update_event
     @mcp.tool()
     async def update_event_tool(
-        calendar_id: str,
         event_id: str,
+        calendar_id: str = "primary",
         summary: Optional[str] = None,
         start_time: Optional[str] = None,
         end_time: Optional[str] = None,
@@ -122,7 +122,7 @@ def create_mcp_server():
 
     # 6. delete_event
     @mcp.tool()
-    async def delete_event_tool(calendar_id: str, event_id: str) -> str:
+    async def delete_event_tool(event_id: str, calendar_id: str = "primary") -> str:
         try:
             result = delete_event(calendar_id=calendar_id, event_id=event_id)
             return json.dumps(result, indent=2)
@@ -132,7 +132,7 @@ def create_mcp_server():
 
     # 7. add_attendee
     @mcp.tool()
-    async def add_attendee_tool(calendar_id: str, event_id: str, attendee_emails: List[str]) -> str:
+    async def add_attendee_tool(event_id: str, attendee_emails: List[str], calendar_id: str = "primary") -> str:
         try:
             result = add_attendee(
                 calendar_id=calendar_id,
@@ -165,10 +165,12 @@ def create_mcp_server():
     # 9. query_free_busy
     @mcp.tool()
     async def query_free_busy_tool(
-        calendar_ids: List[str],
         time_min: str,
         time_max: str,
+        calendar_ids: Optional[List[str]] = None,
     ) -> str:
+        if calendar_ids is None:
+            calendar_ids = ["primary"]
         try:
             result = query_free_busy(
                 calendar_ids=calendar_ids,
