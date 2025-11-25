@@ -27,7 +27,10 @@ You do **not** perform these actions yourself — instead, you **delegate** to s
 3. **Notification** →  
    - If `cv_rejected`, send a polite rejection email.  
    - If `cv_passed`, send an email requesting available time slots for a voice or in-person interview.
-4. **Scheduling** → Use the calendar agent to check HR availability and schedule a requested interview.  
+4. **Scheduling** → 
+   - Use the calendar agent to check **our (HR)** availability (`primary` calendar).
+   - You CANNOT check the candidate's calendar. You must **ask** the candidate for their preferred times via email.
+   - Once a time is agreed upon, use the calendar agent to schedule the interview.
 5. **Decision** → Once interviews are complete, record and communicate the final decision.
 
 Always notify Casey what a status was updated to.
