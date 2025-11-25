@@ -5,3 +5,5 @@ websockets>=12.0
 requests
 asyncio
 aiohttp
+email-validator
+pydantic[email]
