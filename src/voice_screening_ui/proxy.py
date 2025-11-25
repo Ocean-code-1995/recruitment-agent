@@ -1,13 +1,18 @@
 """
 WebSocket proxy for OpenAI Realtime API.
 Handles authentication since browsers cannot set custom headers in WebSocket connections.
+Also handles user authentication and session management.
 """
 import asyncio
 import os
 import json
 import logging
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import secrets
+import time
+from typing import Dict, Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
 import aiohttp
 from dotenv import load_dotenv
 
@@ -33,18 +38,146 @@ app.add_middleware(
 
 OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime-mini"
 
+# Session management (in-memory for MVP)
+# In production, use Redis or database
+sessions: Dict[str, dict] = {}  # session_token -> {email, expires_at, created_at}
+
+# Session configuration (moved from frontend)
+SESSION_CONFIG = {
+    "modalities": ["audio", "text"],
+    "instructions": "You are a friendly HR assistant conducting a phone screening interview. Greet the candidate warmly and ask them about their background and interest in the position.",
+    "voice": "alloy",
+    "input_audio_format": "pcm16",
+    "output_audio_format": "pcm16",
+    "turn_detection": {
+        "type": "server_vad",
+        "threshold": 0.5,
+        "prefix_padding_ms": 300,
+        "silence_duration_ms": 10000
+    }
+}
+
+# Auth models
+class LoginRequest(BaseModel):
+    email: EmailStr
+
+class VerifyRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+def generate_session_token() -> str:
+    """Generate a secure session token."""
+    return secrets.token_urlsafe(32)
+
+def cleanup_expired_sessions():
+    """Remove expired sessions."""
+    current_time = time.time()
+    
+    # Clean up expired sessions
+    expired_sessions = [
+        token for token, session in sessions.items()
+        if session.get("expires_at", 0) < current_time
+    ]
+    for token in expired_sessions:
+        del sessions[token]
+
+@app.post("/auth/login")
+async def login(request: LoginRequest):
+    """
+    Request authentication for email.
+    Just accepts the email - no code generation needed.
+    """
+    cleanup_expired_sessions()
+    
+    email = request.email.lower()
+
+    logger.info(f"Login request for {email}")
+
+    return {
+        "message": "Please enter your authentication code",
+        "email": email
+    }
+
+@app.post("/auth/verify")
+async def verify(request: VerifyRequest):
+    """
+    Verify email and code, return session token.
+    Authentication logic left empty for now - just accepts any code.
+    """
+    cleanup_expired_sessions()
+    
+    email = request.email.lower()
+    code = request.code
+    
+    # TODO: Implement actual authentication logic here
+    # For testing: accepts any email and code combination
+    def authenticate_user(email: str, code: str) -> bool:
+        """
+        Authenticate user with email and code.
+        For testing: accepts anything typed.
+        TODO: Implement actual authentication logic.
+        """
+        # For testing purposes, accept any input
+        return True
+    
+    # Authenticate user
+    if not authenticate_user(email, code):
+        raise HTTPException(status_code=401, detail="Invalid authentication code")
+    
+    # Authentication successful, create session
+    session_token = generate_session_token()
+    
+    sessions[session_token] = {
+        "email": email,
+        "expires_at": time.time() + 3600,  # 1 hour
+        "created_at": time.time()
+    }
+    
+    logger.info(f"Session created for {email}: {session_token[:8]}...")
+    
+    return {
+        "session_token": session_token,
+        "expires_in": 3600
+    }
+
+def validate_session_token(token: Optional[str]) -> Optional[dict]:
+    """Validate session token and return session data."""
+    if not token:
+        return None
+    
+    cleanup_expired_sessions()
+    
+    if token not in sessions:
+        return None
+    
+    session = sessions[token]
+    
+    if session["expires_at"] < time.time():
+        del sessions[token]
+        return None
+    
+    return session
 
 @app.websocket("/ws/realtime")
-async def websocket_proxy(websocket: WebSocket):
+async def websocket_proxy(websocket: WebSocket, token: Optional[str] = Query(None)):
     """
     Proxy WebSocket connection to OpenAI Realtime API.
     Adds proper authentication headers that browsers cannot set.
+    Requires valid session token for authentication.
     """
     client_id = id(websocket)
     logger.info(f"[{client_id}] Client connecting...")
     
+    # Validate session token
+    session = validate_session_token(token)
+    if not session:
+        logger.warning(f"[{client_id}] Invalid or missing session token")
+        await websocket.close(code=1008, reason="Invalid or expired session token")
+        return
+    
     await websocket.accept()
-    logger.info(f"[{client_id}] Client connected")
+    logger.info(f"[{client_id}] Client connected (user: {session['email']})")
     
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -75,6 +208,24 @@ async def websocket_proxy(websocket: WebSocket):
                     "status": "connected",
                     "message": "Proxy connected to OpenAI Realtime API"
                 })
+                
+                # Configure session (moved from frontend)
+                await openai_ws.send_str(json.dumps({
+                    "type": "session.update",
+                    "session": SESSION_CONFIG
+                }))
+                logger.info(f"[{client_id}] Session configured")
+                
+                # Send greeting after session is configured
+                await asyncio.sleep(0.5)  # Small delay to ensure session is configured
+                await openai_ws.send_str(json.dumps({
+                    "type": "response.create",
+                    "response": {
+                        "modalities": ["audio", "text"],
+                        "instructions": "Greet the candidate and ask them to tell you about themselves."
+                    }
+                }))
+                logger.info(f"[{client_id}] Greeting sent")
                 
                 # Bidirectional message forwarding
                 async def forward_to_openai():
@@ -195,9 +346,11 @@ async def websocket_proxy(websocket: WebSocket):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
+    cleanup_expired_sessions()
     return {
         "status": "healthy",
-        "openai_api_key_configured": bool(os.getenv("OPENAI_API_KEY"))
+        "openai_api_key_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "active_sessions": len(sessions)
     }
 
 
