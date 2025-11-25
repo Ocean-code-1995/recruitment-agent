@@ -4,6 +4,9 @@ These queries / tests are used to test how well the supervisor agent performs by
 ## 1. Run CV screening for a newly uploaded candidate
 ### Query
 "Please screen the new applicant and update their status accordingly."
+OR
+"Please check if there is any applicants. Please tell me who if so. Then send them to the cv screening and update their status accordingly"
+
 ### Expected behavior
 Supervisor identifies that the candidate is in a state requiring CV screening.  
 Supervisor delegates the work to the CV Screening agent.  
