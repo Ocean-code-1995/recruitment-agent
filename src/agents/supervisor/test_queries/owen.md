@@ -3,9 +3,10 @@ These queries / tests are used to test how well the supervisor agent performs by
 
 ## 1. Run CV screening for a newly uploaded candidate
 ### Query
-"Please screen the new applicant and update their status accordingly."
-OR
-"Please check if there is any applicants. Please tell me who if so. Then send them to the cv screening and update their status accordingly"
+- "Please screen the new applicant and update their status accordingly."
+
+- ***Clearer option:***
+    - "Please check if there is any applicants. Please tell me who if so. Then send them to the cv screening and update their status accordingly"
 
 ### Expected behavior
 Supervisor identifies that the candidate is in a state requiring CV screening.  
@@ -16,10 +17,13 @@ Supervisor waits for the tool output and then reports the updated status without
 - The supervisor asks for the name of the applicant. Instead it should have automatically delegated it to the DB Executor. It needs to be less reliant on the user for something this trivial.
 - The DB agent keeps trying to get a file at src\database\cvs\parsed\1dd5c1f2-737e-430f-9747-8b77d60219f3_SWefers_CV.txt. That path doesn't exist. Something is confusing it on which path the CVs are at.
 
+***`Comments`: Note that the cv screening workflow currently only set status to **applied**. Status quo is to let db executor run the eval. Was not sure yesterday to already include **devision node** in cv screening workflow. But would defintiely make it more autonomous.***
+
 ---
 
 ## 2. Process multiple new candidates simultaneously
 ### Query
+
 "We have several new applicants. Process all of them and let me know how the screening went."
 ### Expected behavior
 Supervisor queries current candidate states via DB Executor and identifies all candidates in the new or cv_uploaded state.  
@@ -28,6 +32,9 @@ Each CV Screening agent run updates the database through DB Executor.
 Supervisor receives aggregated outcomes and summarizes them for HR.
 ### Notes / issues
 TODO when Gmail works fine. Fix DB Executor as well.
+
+***`Comment`: we are still at single candidate mvp.*** `BUT`we should still try if already `possible`!
+
 
 ---
 
@@ -58,6 +65,8 @@ Supervisor returns a clean confirmation.
 - Gmail has issue without using `--allow-blocking` when launching `langgraph dev`. But this also breaks the database.
 - Gmail agent kept asking multiple times whether info was correct, even after being told yes. It needs
 to just do what it is told.
+
+***`Comment:`*** sending emails works for me on mac without an y issues.not sure whether windows thing?
 
 ---
 
@@ -100,6 +109,8 @@ Supervisor produces a summary of completed actions.
 ### Notes / issues
 - Got lots of database errors and missing CVs (the CVs should be in the DB, they're in the files). The DB Executor needs to have clearer instructions for how to use it, and be more persistant. It cannot give up if it fails once.
 
+***`Comment`: we are still at single candidate mvp.*** `BUT`we should still try if already `possible`!
+
 ---
 
 ## 8. Parse a CV without screening
@@ -140,3 +151,5 @@ Subagent performs the atomic action and DB Executor persists the update.
 Supervisor does not repeat completed steps or skip steps.
 ### Notes / issues
 - It worked fine, but it took many attempts to set info in the database. Maybe more clear explanation is needed.
+
+***`Comment`: Interesting as **checklist is not implemented**. I reckon since candidate status got more fine grained yesterday!?
