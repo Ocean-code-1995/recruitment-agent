@@ -23,6 +23,7 @@ def get_prompt(
     version: int = None,
     label: str = None,
     local_prompt_path: str = None,
+    latest_version: bool = False,
 ) -> str:
     """
     Load a prompt either from:
@@ -52,6 +53,7 @@ def get_prompt(
         version=version,
         label=label,
         local_prompt_path=local_prompt_path,
+        latest_version=latest_version,
     )
 
 

@@ -14,8 +14,8 @@ from src.agents.cv_screening.utils.db import evaluate_cv_screening_decision
 
 
 SYSTEM_PROMPT = get_prompt(
-    template_name="db_executor",
-    local_prompt_path="db_executor/v1.txt"
+    template_name="DB_Executor",
+    latest_version=True
 )
 
 

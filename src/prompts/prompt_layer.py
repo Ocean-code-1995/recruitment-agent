@@ -61,6 +61,7 @@ class PromptManager:
         version: Optional[int] = None,
         label: Optional[str] = None,
         local_prompt_path: Optional[str] = None,
+        latest_version: bool = False,
     ) -> str:
         """
         Load a prompt from:
@@ -72,6 +73,7 @@ class PromptManager:
             version: Version for PromptLayer
             label: Environment label
             local_prompt_path: Full path to local file OR directory containing prompt files
+            latest_version: If True, explicitly fetch the latest version (ignoring label)
 
         Returns:
             str: Prompt content
@@ -100,6 +102,62 @@ class PromptManager:
 
         if self.client:
             try:
+                if latest_version:
+                    # Fetch the latest template definition directly without execution
+                    response = self.client.templates.get(template_name)
+                    
+                    # Extract the prompt text from llm_kwargs (preferred) or prompt_template
+                    prompt_content = None
+                    
+                    # Strategy 1: Try llm_kwargs (cleanest format)
+                    if isinstance(response, dict) and "llm_kwargs" in response:
+                        messages = response["llm_kwargs"].get("messages", [])
+                        # Try to find system message
+                        for msg in messages:
+                            if msg.get("role") == "system":
+                                prompt_content = msg.get("content")
+                                break
+                        # Fallback to first message
+                        if prompt_content is None and messages:
+                            prompt_content = messages[0].get("content")
+
+                    # Strategy 2: Try prompt_template dictionary structure
+                    if prompt_content is None and isinstance(response, dict) and "prompt_template" in response:
+                         pt = response["prompt_template"]
+                         if isinstance(pt, dict) and "messages" in pt:
+                             messages = pt["messages"]
+                             for msg in messages:
+                                 # Check role if available
+                                 if msg.get("role") == "system" and "content" in msg:
+                                     content_list = msg["content"]
+                                     if isinstance(content_list, list) and content_list:
+                                         # Extract text from content list [{'type': 'text', 'text': '...'}]
+                                         for item in content_list:
+                                             if item.get("type") == "text":
+                                                 prompt_content = item.get("text")
+                                                 break
+                                 if prompt_content: break
+                             
+                             # Fallback: first message content
+                             if prompt_content is None and messages and "content" in messages[0]:
+                                 content_list = messages[0]["content"]
+                                 if isinstance(content_list, list) and content_list:
+                                     for item in content_list:
+                                         if item.get("type") == "text":
+                                             prompt_content = item.get("text")
+                                             break
+
+                    # Fallback: Stringify if nothing else found
+                    if prompt_content is None:
+                        prompt_content = str(response)
+
+                    print(
+                        f"📋 Loaded prompt '{template_name}' from PromptLayer (latest version)",
+                        flush=True
+                    )
+                    return prompt_content
+
+                # Standard flow using labels (existing logic)
                 response = self.client.run(
                     prompt_name=template_name,
                     input_variables={},

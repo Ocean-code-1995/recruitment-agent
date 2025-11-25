@@ -9,8 +9,8 @@ from src.prompts import get_prompt
 
 
 SYSTEM_PROMPT = get_prompt(
-    template_name="gcalendar",
-    local_prompt_path="gcalendar/v1.txt"
+    template_name="GCalendar",
+    latest_version=True     
 )
 
 @tool

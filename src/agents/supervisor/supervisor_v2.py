@@ -26,8 +26,8 @@ from src.agents import (
 )
 
 SYSTEM_PROMPT = get_prompt(
-    template_name="supervisor",
-    local_prompt_path="supervisor/v1.txt"
+    template_name="Supervisor",
+    latest_version=True,
 )
 
 # --------- Subagents as tools ---------

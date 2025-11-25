@@ -16,11 +16,9 @@ from src.prompts import get_prompt
 load_dotenv()
 
 SYSTEM_PROMPT = get_prompt(
-    template_name="cv_screener",
-    local_prompt_path="cv_screener/v1.txt"
+    template_name="CV_Screener",
+    latest_version=True
 )
-
-
 
 # --- The evaluator function ---
 def screen_cv(cv_text: str, jd_text: str) -> CVScreeningOutput:
