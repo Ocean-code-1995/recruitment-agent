@@ -17,7 +17,7 @@ Supervisor waits for the tool output and then reports the updated status without
 - The supervisor asks for the name of the applicant. Instead it should have automatically delegated it to the DB Executor. It needs to be less reliant on the user for something this trivial.
 - The DB agent keeps trying to get a file at src\database\cvs\parsed\1dd5c1f2-737e-430f-9747-8b77d60219f3_SWefers_CV.txt. That path doesn't exist. Something is confusing it on which path the CVs are at.
 
-***`Comments`: Note that the cv screening workflow currently only set status to **applied**. Status quo is to let db executor run the eval. Was not sure yesterday to already include **devision node** in cv screening workflow. But would defintiely make it more autonomous.***
+***`Comments`: Note that the cv screening workflow currently only set status to **applied**. Status quo is to let db executor run the eval. Was not sure yesterday to already include **devision node** in cv screening workflow. But would defintiely make it more autonomous. For now I decided to attach `cv screening decision tool`to db agent, where the supervisor can set a threshold of what defines fail vs. pass***
 
 ---
 
@@ -152,4 +152,4 @@ Supervisor does not repeat completed steps or skip steps.
 ### Notes / issues
 - It worked fine, but it took many attempts to set info in the database. Maybe more clear explanation is needed.
 
-***`Comment`: Interesting as **checklist is not implemented**. I reckon since candidate status got more fine grained yesterday!?
+***`Comment`***: Interesting as **checklist is not implemented**. I reckon since candidate status got more fine grained yesterday!?
