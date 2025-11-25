@@ -2,6 +2,7 @@ import enum
 
 class CandidateStatus(str, enum.Enum):
     applied = "applied"
+    cv_screened = "cv_screened"
     cv_passed = "cv_passed"
     cv_rejected = "cv_rejected"
     voice_passed = "voice_passed"
