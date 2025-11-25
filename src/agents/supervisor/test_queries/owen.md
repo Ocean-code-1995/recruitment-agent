@@ -24,7 +24,22 @@ Supervisor waits for the tool output and then reports the updated status without
 ## 2. Process multiple new candidates simultaneously
 ### Query
 
-"We have several new applicants. Process all of them and let me know how the screening went."
+**Queries:**
+- "We have several new applicants. Process all of them and let me know how the screening went."
+
+- "We have two applicants in our database: one has just applied and the other has passed CV screening, correct? 
+Please confirm that first and tell me what the actual statuses are.
+
+Then:
+
+• If one has status "applied", send him to the voice screening.
+
+• If the other candidate has successfully passed the CV screening, then prepare a congratulatory email. 
+    - Before preparing the email, check our calendar for available time slots for a person-to-person interview.
+    - Include these available time slots in the email.
+
+At the end, summarize the actions you took.
+"
 ### Expected behavior
 Supervisor queries current candidate states via DB Executor and identifies all candidates in the new or cv_uploaded state.  
 Supervisor routes each candidate to the CV Screening agent using isolated per candidate threads.  
