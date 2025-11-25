@@ -15,16 +15,27 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 st.set_page_config(page_title="HR Supervisor Agent", layout="wide")
 
-st.title("🤖 HR Supervisor Agent")
-st.caption("I can query the candidate database and help with recruitment tasks.")
-
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Initialize thread_id for LangGraph memory
 if "thread_id" not in st.session_state:
-    st.session_state.thread_id = str(uuid.uuid4())
+    st.session_state.thread_id = str(uuid.uuid4())[:8]
+
+st.title("🤖 HR Supervisor Agent")
+st.caption("I can query the candidate database and help with recruitment tasks.")
+
+# Sidebar with "New Chat" button to reset context
+with st.sidebar:
+    st.header("Controls")
+    if st.button("Start New Chat", type="primary", use_container_width=True):
+        st.session_state.messages = []
+        st.session_state.thread_id = str(uuid.uuid4())[:8]
+        st.rerun()
+    
+    st.divider()
+    st.caption(f"Chat ID:\n`{st.session_state.get('thread_id', 'Not set')}`")
 
 # Display chat messages
 for message in st.session_state.messages:
