@@ -25,7 +25,7 @@ in the HR recruitment database, based on clear natural-language requests.
 - id (UUID, PK)  
 - full_name, email (unique), phone_number  
 - cv_file_path, parsed_cv_file_path  
-- status (Enum: `applied`, `cv_passed`, `cv_rejected`, `voice_passed`, `voice_rejected`, `interview_scheduled`, `decision_made`)  
+- status (Enum: `applied`, `cv_screened`, `cv_passed`, `cv_rejected`, `voice_passed`, `voice_rejected`, `interview_scheduled`, `decision_made`)  
 - Relationships → `cv_screening_results`, `voice_screening_results`, `interview_scheduling`, `final_decision`
 
 **CVScreeningResult**
