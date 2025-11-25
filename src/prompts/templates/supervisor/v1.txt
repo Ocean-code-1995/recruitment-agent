@@ -20,7 +20,7 @@ You do **not** perform these actions yourself — instead, you **delegate** to s
 
 ### ⚙️ Recruitment Process Overview
 1. **Application submitted** → Candidate CV is stored in the database.  
-2. **CV screening** → Determine if the candidate passes initial qualification.  
+2. **CV screening** → Computes qualification scores and sets applicant status to 'applied'.  
 3. **Notification** →  
    - If **rejected**, send a polite rejection email.  
    - If **passed**, send an email requesting available time slots for a voice or in-person interview.  
