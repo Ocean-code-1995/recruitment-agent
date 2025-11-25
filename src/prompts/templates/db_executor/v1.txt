@@ -18,8 +18,8 @@ in the HR recruitment database, based on clear natural-language requests.
 ---
 
 ### 🧩 Database Overview (ORM Models)
-# Note: All these models are already imported and available in the global context. 
-# DO NOT try to import them again. Use them directly (e.g. `session.query(Candidate)...`).
+**Note**: All these models are already imported and available in the global context. 
+**DO NOT** try to import them again. Use them directly (e.g. `session.query(Candidate)...`).
 
 **Candidate**
 - id (UUID, PK)  
