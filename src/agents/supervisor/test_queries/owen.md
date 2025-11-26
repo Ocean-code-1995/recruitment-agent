@@ -2,11 +2,9 @@
 These queries / tests are used to test how well the supervisor agent performs by evaluating its responses to various tasks.
 
 ## 1. Run CV screening for a newly uploaded candidate
-### Query
+### Queries
 - "Please screen the new applicant and update their status accordingly."
-
-- ***Clearer option:***
-    - "Please check if there is any applicants. Please tell me who if so. Then send them to the cv screening and update their status accordingly"
+- "Please check if there is any applicants. Please tell me who if so. Then send them to the cv screening and update their status accordingly"
 
 ### Expected behavior
 Supervisor identifies that the candidate is in a state requiring CV screening.  
@@ -27,29 +25,24 @@ Supervisor waits for the tool output and then reports the updated status without
 **Queries:**
 - "We have several new applicants. Process all of them and let me know how the screening went."
 
-- "We have two applicants in our database: one has just applied and the other has passed CV screening, correct? 
+- """We have two applicants in our database: one has just applied and the other has passed CV screening, correct? 
 Please confirm that first and tell me what the actual statuses are.
 
 Then:
-
-• If one has status "applied", send him to the voice screening.
-
-• If the other candidate has successfully passed the CV screening, then prepare a congratulatory email. 
+- If one has status "applied", send him to the voice screening.
+- If the other candidate has successfully passed the CV screening, then prepare a congratulatory email. 
     - Before preparing the email, check our calendar for available time slots for a person-to-person interview.
     - Include these available time slots in the email.
 
 At the end, summarize the actions you took.
-"
+"""
 ### Expected behavior
 Supervisor queries current candidate states via DB Executor and identifies all candidates in the new or cv_uploaded state.  
 Supervisor routes each candidate to the CV Screening agent using isolated per candidate threads.  
 Each CV Screening agent run updates the database through DB Executor.  
 Supervisor receives aggregated outcomes and summarizes them for HR.
 ### Notes / issues
-TODO when Gmail works fine. Fix DB Executor as well.
-
-***`Comment`: we are still at single candidate mvp.*** `BUT`we should still try if already `possible`!
-
+TODO
 
 ---
 
@@ -63,7 +56,7 @@ Gmail Agent contacts Gmail MCP to send the message.
 DB Executor updates the candidate status to awaiting_time_slots.  
 Supervisor reports the next expected step.
 ### Notes / issues
-TODO
+- Works correctly. Asked DB Executor for email, then sent the email.
 
 ---
 
@@ -81,7 +74,7 @@ Supervisor returns a clean confirmation.
 - Gmail agent kept asking multiple times whether info was correct, even after being told yes. It needs
 to just do what it is told.
 
-***`Comment:`*** sending emails works for me on mac without an y issues.not sure whether windows thing?
+***`Comment:`*** sending emails works for me on mac without any issues. not sure whether windows thing?
 
 ---
 
@@ -108,7 +101,7 @@ Calendar Agent uses the Calendar MCP to match candidate availability with HR cal
 DB Executor updates the status to interview_scheduled.  
 Supervisor reports the scheduled event.
 ### Notes / issues
-TODO when Gmail works fine.
+- Works correctly. Asked DB Executor for email, then sent the email.
 
 ---
 
@@ -151,7 +144,7 @@ Gmail Agent sends the email through Gmail MCP.
 DB Executor records that a follow up was sent.  
 Supervisor confirms the action.
 ### Notes / issues
-TODO when Gmail works fine.
+- Works correctly. Asked DB Executor for email, then sent the email.
 
 ---
 
@@ -167,4 +160,12 @@ Supervisor does not repeat completed steps or skip steps.
 ### Notes / issues
 - It worked fine, but it took many attempts to set info in the database. Maybe more clear explanation is needed.
 
-***`Comment`***: Interesting as **checklist is not implemented**. I reckon since candidate status got more fine grained yesterday!?
+## 11. High level summary of all candidates
+### Query
+"Tell me a high level summary about all candidates that have "applied" but not yet moved on."
+### Expected Behavior
+Supervisor does not provide just the names, emails, or phone numbers.
+Supervisor asks CV screener for info about the candidates.
+### Notes / issues
+- CV screener is having issues finding applicant CVs.
+- Supervisor tried just giving names or contact info which is insufficient.
