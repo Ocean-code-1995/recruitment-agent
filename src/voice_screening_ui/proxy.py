@@ -18,6 +18,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Quer
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 import aiohttp
+from sqlalchemy import select, desc
+from src.database.candidates.models import Candidate, CVScreeningResult
+from src.database.candidates.client import SessionLocal
+from src.voice_screening_ui.utils.questions import get_screening_questions
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -167,7 +171,7 @@ def validate_session_token(token: Optional[str]) -> Optional[dict]:
     return session
 
 @app.websocket("/ws/realtime")
-async def websocket_proxy(websocket: WebSocket, token: Optional[str] = Query(None)):
+async def websocket_proxy(websocket: WebSocket, token: Optional[str] = Query(None), candidate_id: Optional[str] = Query(None)):
     """
     Proxy WebSocket connection to OpenAI Realtime API.
     Adds proper authentication headers that browsers cannot set.
@@ -217,9 +221,53 @@ async def websocket_proxy(websocket: WebSocket, token: Optional[str] = Query(Non
                 })
                 
                 # Configure session (moved from frontend)
+                # Dynamic session configuration based on candidate
+                current_session_config = SESSION_CONFIG.copy()
+                
+                if candidate_id:
+                    try:
+                        with SessionLocal() as db:
+                            # Fetch candidate
+                            candidate = db.execute(
+                                select(Candidate).where(Candidate.id == candidate_id)
+                            ).scalar_one_or_none()
+                            
+                            if candidate:
+                                # Fetch latest CV screening result for job title
+                                cv_result = db.execute(
+                                    select(CVScreeningResult)
+                                    .where(CVScreeningResult.candidate_id == candidate_id)
+                                    .order_by(desc(CVScreeningResult.timestamp))
+                                    .limit(1)
+                                ).scalar_one_or_none()
+                                
+                                job_title = cv_result.job_title if cv_result else "the position"
+                                questions = get_screening_questions(job_title)
+                                
+                                instructions = (
+                                    f"You are a friendly HR assistant conducting a phone screening interview with {candidate.full_name} "
+                                    f"for the position of {job_title}. "
+                                    f"Greet the candidate warmly by name. "
+                                    f"Your goal is to ask the following main questions to assess their fit:\n\n"
+                                )
+                                
+                                for i, q in enumerate(questions, 1):
+                                    instructions += f"{i}. {q}\n"
+                                    
+                                instructions += (
+                                    "\nAsk one question at a time. Wait for their response before moving to the next. "
+                                    "Keep the conversations brief and to the point, ask only one follow-up question per main question. If they ask clarifying questions, answer them briefly."
+                                )
+                                
+                                current_session_config["instructions"] = instructions
+                                logger.info(f"[{client_id}] Generated dynamic instructions for candidate {candidate.full_name}")
+                    except Exception as e:
+                        logger.error(f"[{client_id}] Error fetching candidate info: {e}")
+                        # Fallback to default instructions
+                
                 await openai_ws.send_str(json.dumps({
                     "type": "session.update",
-                    "session": SESSION_CONFIG
+                    "session": current_session_config
                 }))
                 logger.info(f"[{client_id}] Session configured")
                 
