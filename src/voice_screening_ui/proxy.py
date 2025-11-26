@@ -122,12 +122,31 @@ async def verify(request: VerifyRequest):
     # For testing: accepts any email and code combination
     def authenticate_user(email: str, code: str) -> bool:
         """
-        Authenticate user with email and code.
-        For testing: accepts anything typed.
-        TODO: Implement actual authentication logic.
+        Authenticate user with email and code against the database.
         """
-        # For testing purposes, accept any input
-        return True
+        try:
+            with SessionLocal() as db:
+                candidate = db.execute(
+                    select(Candidate).where(Candidate.email == email)
+                ).scalar_one_or_none()
+                
+                if not candidate:
+                    logger.warning(f"Authentication failed: Candidate {email} not found")
+                    return False
+                
+                if not candidate.auth_code:
+                    logger.warning(f"Authentication failed: No auth code set for {email}")
+                    return False
+                    
+                # Simple string comparison for now
+                if candidate.auth_code == code:
+                    return True
+                
+                logger.warning(f"Authentication failed: Invalid code for {email}")
+                return False
+        except Exception as e:
+            logger.error(f"Error during authentication: {e}")
+            return False
     
     # Authenticate user
     if not authenticate_user(email, code):

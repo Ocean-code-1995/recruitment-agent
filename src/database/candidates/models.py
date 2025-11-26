@@ -14,6 +14,7 @@ from datetime import datetime
 import uuid
 
 from src.state.candidate import CandidateStatus, InterviewStatus, DecisionStatus
+from src.database.candidates.utils import generate_auth_code
 
 
 Base = declarative_base()
@@ -33,6 +34,7 @@ class Candidate(Base):
     status = Column(Enum(CandidateStatus), default=CandidateStatus.applied, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    auth_code = Column(String, default=generate_auth_code, nullable=True)
 
     # Relationships
     cv_screening_results = relationship(
