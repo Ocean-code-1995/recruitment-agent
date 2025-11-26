@@ -79,25 +79,7 @@ class PromptManager:
             str: Prompt content
         """
 
-        # 1️⃣ If local path is provided, ALWAYS load from local
-        if local_prompt_path:
-            try:
-                # If a directory is passed, append template_name + .txt
-                if os.path.isdir(local_prompt_path):
-                    file_path = os.path.join(local_prompt_path, f"{template_name}.txt")
-                else:
-                    file_path = local_prompt_path
-
-                with open(file_path, "r", encoding="utf-8") as f:
-                    print(f"📄 Loaded prompt '{template_name}' from local file: {file_path}", flush=True)
-                    return f.read()
-
-            except Exception as e:
-                raise ValueError(
-                    f"❌ Failed to load local prompt at '{local_prompt_path}': {e}"
-                )
-
-        # 2️⃣ Otherwise, fall back to PromptLayer
+        # 1️⃣ Try PromptLayer FIRST if client is available
         label = label or self.environment
 
         if self.client:
@@ -177,12 +159,38 @@ class PromptManager:
                 return prompt_content
 
             except Exception as e:
-                raise ValueError(
-                    f"❌ PromptLayer failed to load '{template_name}': {e}"
-                )
+                print(f"⚠️  PromptLayer failed: {e}. Falling back to local templates...", flush=True)
+        
+        # 2️⃣ Fall back to local files if PromptLayer failed or unavailable
+        if local_prompt_path:
+            try:
+                # If a directory is passed, append template_name + .txt
+                if os.path.isdir(local_prompt_path):
+                    # Try exact match first: template_name.txt (case-sensitive)
+                    file_path = os.path.join(local_prompt_path, f"{template_name}.txt")
+                    
+                    # If not found, try subdirectory with lowercase template_name
+                    if not os.path.exists(file_path):
+                        lowercase_name = template_name.lower()
+                        file_path = os.path.join(local_prompt_path, lowercase_name, "v1.txt")
+                    
+                    # If still not found, try subdirectory with original template_name
+                    if not os.path.exists(file_path):
+                        file_path = os.path.join(local_prompt_path, template_name, "v1.txt")
+                else:
+                    file_path = local_prompt_path
 
+                with open(file_path, "r", encoding="utf-8") as f:
+                    print(f"📄 Loaded prompt '{template_name}' from local file: {file_path}", flush=True)
+                    return f.read()
+
+            except Exception as e:
+                raise ValueError(
+                    f"❌ Failed to load '{template_name}' from local path '{local_prompt_path}': {e}"
+                )
+        
         raise ValueError(
-            f"❌ No local_prompt_path provided and PromptLayer is unavailable."
+            f"❌ Failed to load '{template_name}': PromptLayer unavailable and no local_prompt_path provided."
         )
 
 
