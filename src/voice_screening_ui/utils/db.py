@@ -61,7 +61,7 @@ def write_voice_results_to_db(
 
         # Add and commit
         session.add(screening_entry)
-        candidate.status = CandidateStatus.voice_done
+        candidate.status = CandidateStatus.voice_screened
         candidate.updated_at = datetime.utcnow()
         session.commit()
 

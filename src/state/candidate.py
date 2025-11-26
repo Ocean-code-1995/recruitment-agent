@@ -5,6 +5,7 @@ class CandidateStatus(str, enum.Enum):
     cv_screened = "cv_screened"
     cv_passed = "cv_passed"
     cv_rejected = "cv_rejected"
+    voice_screened = "voice_screened"
     voice_passed = "voice_passed"
     voice_rejected = "voice_rejected"
     interview_scheduled = "interview_scheduled"
