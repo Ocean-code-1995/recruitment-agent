@@ -296,6 +296,22 @@ src/voice_screening_ui/
 6. Test analysis function (doesn't work, need work, a lot of work)
 7. Test database saving (doesn't work, need work, a lot, a lot of work)
 
+### Verification Script
+To verify the integration of the voice screener with the candidate database and static questions, you can run the provided verification script.
+
+**Option 1: Run via Docker (Recommended)**
+This uses the containerized environment which already has all dependencies and network access to the database.
+```bash
+docker compose -f docker/docker-compose.yml run --rm -e POSTGRES_HOST=db websocket_proxy python tests/verify_voice_integration.py
+```
+
+**Option 2: Run Locally**
+If you prefer to run it locally, you need to install the database requirements first:
+```bash
+pip install -r requirements/db.txt
+python tests/verify_voice_integration.py
+```
+
 **Known Limitations:**
 - Uses deprecated `ScriptProcessor` API (should migrate to `AudioWorklet`)
 - Authentication codes displayed directly in MVP (should be sent via email/SMS in production)
