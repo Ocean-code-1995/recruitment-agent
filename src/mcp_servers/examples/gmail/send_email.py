@@ -88,7 +88,9 @@ async def main():
         ]
     })
 
+    print("\n\n~~~ RESULT ~~~")
     print(result['messages'][-1].content)
+    print("~~~ END RESULT ~~~")
 
 if __name__ == "__main__":
     asyncio.run(main())

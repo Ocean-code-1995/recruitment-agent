@@ -64,10 +64,10 @@ if submitted:
         # ~~~~~~~~~~~~~~~~process the application~~~~~~~~~~~~~~~
         try:
             # 1️⃣ Save CV locally
-            file_path = save_cv(uploaded_file, uploaded_file.name)
+            file_path = save_cv(uploaded_file, uploaded_file.name, candidate_name=full_name)
             file_path = Path(file_path)
 
-            # 2️⃣ Register candidate
+            # 2️⃣ Register candidate & write to DB
             st.info("💾 Registering your application...")
             success = register_candidate(full_name, email, phone, str(file_path))
 
@@ -77,7 +77,7 @@ if submitted:
                     "You can only apply once — please wait for review."
                 )
             else:
-                # 3️⃣ Parse automatically → save in parsed/
+                # 3️⃣ Parse CV automatically → save in parsed/
                 st.info("🧠 Parsing your CV, please wait...")
                 pdf_to_markdown(
                     input_path=file_path,

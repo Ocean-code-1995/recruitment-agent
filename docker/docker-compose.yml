@@ -1,3 +1,8 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+# Run as follows from root:
+# >>> docker compose --env-file .env -f docker/docker-compose.yml up --build
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
 services:
   # --- Database Service ---
   # Runs a PostgreSQL 15 instance with persistent storage.
@@ -6,7 +11,7 @@ services:
     container_name: agentic_hr_db
     restart: always
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -74,7 +79,7 @@ services:
     env_file:
       - ../.env
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    #  OPENAI_API_KEY: ${OPENAI_API_KEY}
       DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
       CV_UPLOAD_PATH: /app/src/database/cvs/uploads
     volumes:
@@ -127,6 +132,29 @@ services:
       # Mount local code for live updates
       - ../:/app
     command: ["streamlit", "run", "src/voice_screening_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    networks:
+      - hrnet
+
+  # --- Supervisor Agent UI ---
+  supervisor_ui:
+    container_name: supervisor_ui
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.supervisor
+    ports:
+      - "8503:8501"  # Map host port 8503 to container port 8501
+    depends_on:
+      - db
+    env_file:
+      - ../.env
+    environment:
+      # We set POSTGRES_HOST to 'db' so the agent connects to the container internal network
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      PYTHONPATH: /app
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
     networks:
       - hrnet
 
