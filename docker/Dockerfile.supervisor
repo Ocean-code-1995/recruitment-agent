@@ -1,0 +1,36 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirement files
+COPY requirements/base.txt requirements/base.txt
+COPY requirements/db.txt requirements/db.txt
+COPY requirements/agent.txt requirements/agent.txt
+COPY requirements/supervisor.txt requirements/supervisor.txt
+COPY requirements/mcp_calendar.txt requirements/mcp_calendar.txt
+
+# Install dependencies directly (no venv needed in container)
+# **NOTE** uv isntallation is needed for the gmail mcp server to work.
+#          >>> it is installed in the base image /usr/local/bin/uv
+RUN pip install --no-cache-dir uv && \
+    pip install --no-cache-dir -r requirements/supervisor.txt && \
+    pip install --no-cache-dir -r requirements/db.txt && \
+    pip install --no-cache-dir -r requirements/agent.txt && \
+    pip install --no-cache-dir -r requirements/mcp_calendar.txt
+
+# Copy application code
+COPY src/ /app/src/
+COPY secrets/ /app/secrets/
+COPY .env /app/.env
+
+# Expose Streamlit port
+EXPOSE 8501
+
+# Run Streamlit
+CMD ["streamlit", "run", "src/supervisor_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

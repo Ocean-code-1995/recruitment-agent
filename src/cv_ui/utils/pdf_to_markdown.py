@@ -363,7 +363,7 @@ def pdf_to_markdown(
         contact_section = process_section(build_contact_section_from_filename(pdf_file))
         final_sections.insert(0, contact_section)
 
-        out_txt = output_path / f"{pdf_file.stem}-sections.txt"
+        out_txt = output_path / f"{pdf_file.stem}.txt"
         log_step(f"Writing output to {out_txt}...")
 
         lines: List[str] = []
