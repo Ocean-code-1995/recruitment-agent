@@ -87,6 +87,7 @@ class VoiceScreeningResult(Base):
     sentiment_score = Column(Float)
     confidence_score = Column(Float)
     communication_score = Column(Float)
+    proficiency_score = Column(Float)
     llm_summary = Column(Text)
     llm_judgment_json = Column(JSON)
     audio_url = Column(String)

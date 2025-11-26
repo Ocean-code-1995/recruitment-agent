@@ -161,6 +161,7 @@ async def verify(request: VerifyRequest):
         "created_at": time.time(),
         "user_audio_chunks": [],  # List of {timestamp, data: bytes}
         "agent_audio_chunks": [],  # List of {timestamp, data: bytes}
+        "transcript": [],  # List of {speaker, text, timestamp}
         "session_start_time": None  # Set when WebSocket connects
     }
     
@@ -370,6 +371,24 @@ async def websocket_proxy(websocket: WebSocket, token: Optional[str] = Query(Non
                                             except Exception as e:
                                                 logger.warning(f"[{client_id}] Failed to decode agent audio: {e}")
                                     
+                                    # Capture transcript
+                                    if msg_type == "response.audio_transcript.done":
+                                        transcript_text = msg_data.get("transcript", "")
+                                        if transcript_text:
+                                            sessions[token]["transcript"].append({
+                                                "speaker": "agent",
+                                                "text": transcript_text,
+                                                "timestamp": datetime.utcnow().isoformat()
+                                            })
+                                    elif msg_type == "conversation.item.input_audio_transcription.completed":
+                                        transcript_text = msg_data.get("transcript", "")
+                                        if transcript_text:
+                                            sessions[token]["transcript"].append({
+                                                "speaker": "candidate",
+                                                "text": transcript_text,
+                                                "timestamp": datetime.utcnow().isoformat()
+                                            })
+
                                     await websocket.send_text(msg.data)
                                 except Exception as e:
                                     logger.error(f"[{client_id}] Error sending message to client: {e}")
@@ -693,7 +712,13 @@ async def save_audio(request: SaveAudioRequest, token: Optional[str] = Query(Non
         
         logger.info(f"Audio saved for session {request.session_id}: {file_path}")
         
-        return {"file_path": file_path}
+        # Return transcript as well
+        transcript = sessions[token].get("transcript", [])
+        
+        return {
+            "file_path": file_path,
+            "transcript": transcript
+        }
     except Exception as e:
         logger.error(f"Error saving audio: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to save audio: {str(e)}")

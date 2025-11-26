@@ -22,7 +22,9 @@ from src.agents import (
     db_executor,
     cv_screening_workflow,
     gcalendar_agent,
+    gcalendar_agent,
     gmail_agent,
+    voice_screening_judge,
 )
 
 SYSTEM_PROMPT = get_prompt(
@@ -35,7 +37,9 @@ subagents = [
     db_executor,
     cv_screening_workflow,
     gcalendar_agent,
+    gcalendar_agent,
     gmail_agent,
+    voice_screening_judge,
 ]
 
 # --------------- Memory ----------------

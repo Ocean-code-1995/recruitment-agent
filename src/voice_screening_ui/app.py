@@ -177,6 +177,14 @@ with col1:
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.audio_file_path = data.get("file_path")
+                        # Update transcript from server if available
+                        server_transcript = data.get("transcript", [])
+                        if server_transcript:
+                            # Convert server transcript format to UI format if needed
+                            # Server: {speaker, text, timestamp}
+                            # UI: {speaker, text, timestamp} - same format
+                            st.session_state.transcript = server_transcript
+                            
                         st.success(f"✅ Audio recording saved: {st.session_state.audio_file_path}")
                     else:
                         st.warning(f"⚠️ Failed to save audio: {response.text}")
