@@ -226,8 +226,6 @@ class HistoryManager:
         return True
 
 
-
-
 # ==================================================================================
 # AGENT WRAPPER
 # ==================================================================================
@@ -276,6 +274,9 @@ class CompactingSupervisor:
                     )
                     self.history_manager.replace_thread_history(thread_id, compacted_messages)
                     
+                    # Update response to reflect compacted state so UI sees the change
+                    response["messages"] = compacted_messages
+                    
                     # Verify reduction
                     new_tokens = count_tokens_for_messages(compacted_messages)
                     print(f"Compaction complete. {total_tokens} -> {new_tokens}", flush=True)
@@ -289,6 +290,6 @@ history_manager = HistoryManager(memory_saver=memory)
 compacting_supervisor = CompactingSupervisor(
     agent=supervisor_agent, 
     history_manager=history_manager,
-    token_limit=3000,
+    token_limit=500,
     compaction_ratio=0.5
 )
