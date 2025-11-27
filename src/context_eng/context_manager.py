@@ -285,6 +285,63 @@ class CompactingSupervisor:
         
         return response
 
+    def stream(self, input_data: Dict[str, Any], config: Dict[str, Any]):
+        """
+        Stream the agent response token by token, then perform compaction if needed.
+        
+        Yields:
+            dict: Streaming chunks with 'type' and 'content' keys.
+                  - type='token': A content token from the AI response
+                  - type='done': Final message with token count
+                  - type='error': Error occurred
+        """
+        thread_id = config.get("configurable", {}).get("thread_id")
+        full_response_content = ""
+        final_messages = []
+        
+        try:
+            # Stream from the agent
+            for chunk in self.agent.stream(input_data, config, stream_mode="messages"):
+                # chunk is a tuple: (message, metadata)
+                message, metadata = chunk
+                
+                # Only yield content from AI messages that have content
+                if hasattr(message, 'content') and message.content:
+                    # Check if this is an AIMessageChunk (streaming token)
+                    msg_type = message.__class__.__name__
+                    if 'AIMessage' in msg_type:
+                        yield {"type": "token", "content": message.content}
+                        full_response_content += message.content
+            
+            # After streaming completes, get the final state for compaction check
+            # We need to get the current state from memory
+            final_state = self.agent.get_state(config)
+            if final_state and hasattr(final_state, 'values'):
+                final_messages = final_state.values.get("messages", [])
+            
+            # Perform compaction if needed
+            token_count = 0
+            if thread_id and final_messages:
+                token_count = count_tokens_for_messages(final_messages)
+                
+                if token_count > self.token_limit:
+                    print(f"Tokens ({token_count}) exceeded limit ({self.token_limit}). Compacting...", flush=True)
+                    try:
+                        compacted_messages = self.history_manager.compact_messages(
+                            final_messages,
+                            compaction_ratio=self.compaction_ratio
+                        )
+                        self.history_manager.replace_thread_history(thread_id, compacted_messages)
+                        token_count = count_tokens_for_messages(compacted_messages)
+                        print(f"Compaction complete. New token count: {token_count}", flush=True)
+                    except Exception as e:
+                        print(f"Compaction failed: {e}", flush=True)
+            
+            yield {"type": "done", "token_count": token_count}
+            
+        except Exception as e:
+            yield {"type": "error", "content": str(e)}
+
 # Initialize Singleton Instances
 history_manager = HistoryManager(memory_saver=memory)
 compacting_supervisor = CompactingSupervisor(
