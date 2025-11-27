@@ -18,5 +18,5 @@ RUN pip install --no-cache-dir -r requirements/db.txt
 # Copy *only* the candidate database module
 COPY src/database/candidates ./src/database/candidates
 
-# Default command (overridden by docker-compose.yml)
-CMD ["python", "-m", "src.database.candidates.client"]
+# Default command - use dedicated init script to avoid circular import
+CMD ["python", "-m", "src.database.candidates.init_db"]

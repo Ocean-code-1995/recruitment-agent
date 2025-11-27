@@ -33,20 +33,3 @@ def get_engine():
 # --- SQLAlchemy session setup ---
 engine = get_engine()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-
-
-def init_db():
-    """
-    Creates all database tables if they don't exist.
-    Intended for dev setup / Docker initialization.
-    """
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("✅ Database initialized successfully.")
-    except Exception as e:
-        print(f"❌ Failed to initialize database: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    init_db()
