@@ -81,12 +81,12 @@ services:
       - ../.env
     environment:
       # Database connection
-      POSTGRES_HOST: db
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       CV_UPLOAD_PATH: /app/src/database/cvs/uploads
       # App specific
       CV_UPLOAD_API_URL: http://supervisor_api:8080/api/v1/cv
@@ -125,8 +125,8 @@ services:
       - hrnet
 
   # --- Voice Screening UI ---
-  voice_screening_streamlit:
-    container_name: voice_screening_streamlit
+  voice_screening_ui:
+    container_name: voice_screening_ui
     build:
       context: ..
       dockerfile: docker/Dockerfile.voice_screening
@@ -140,7 +140,6 @@ services:
     environment:
       DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
       PYTHONPATH: /app
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
       WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime  # Internal Docker network URL
     volumes:
       # Mount local code for live updates
@@ -163,12 +162,14 @@ services:
       - ../.env
     environment:
       # We set POSTGRES_HOST to 'db' so the agent connects to the container internal network
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       PYTHONPATH: /app
       PROMPTLAYER_API_KEY: ${PROMPTLAYER_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      
     volumes:
       # Mount local code for live updates
       - ../:/app
@@ -191,8 +192,6 @@ services:
       - ../.env
     environment:
       # We set POSTGRES_HOST to 'db' so the agent connects to the container internal network
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
       PYTHONPATH: /app
       # API URL for the Streamlit UI to connect to
       SUPERVISOR_API_URL: http://supervisor_api:8080/api/v1/supervisor
