@@ -9,7 +9,9 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
-from src.cv_ui.utils import save_cv, register_candidate, pdf_to_markdown, update_parsed_cv_path
+from src.database.candidates import register_candidate, update_parsed_cv_path
+from src.database.cvs import save_cv
+from src.doc_parser import pdf_to_markdown
 
 
 router = APIRouter()

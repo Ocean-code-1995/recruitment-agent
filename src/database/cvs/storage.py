@@ -1,5 +1,10 @@
+"""
+CV file storage operations.
+
+This module handles saving and managing CV files on disk.
+"""
+
 import os
-import uuid
 from typing import BinaryIO
 
 # Default upload directory (can be overridden via env var)
@@ -7,9 +12,7 @@ UPLOAD_DIR = os.getenv("CV_UPLOAD_PATH", "src/database/cvs/uploads")
 
 
 def ensure_upload_dir() -> None:
-    """
-    Ensure the CV upload directory exists.
-    """
+    """Ensure the CV upload directory exists."""
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -23,7 +26,7 @@ def save_cv(file_obj: BinaryIO, original_filename: str, candidate_name: str = ""
         candidate_name: The full name of the candidate (optional).
 
     Returns:
-        str: The full path where the file was saved.
+        The full path where the file was saved.
     """
     ensure_upload_dir()
 
@@ -46,3 +49,4 @@ def save_cv(file_obj: BinaryIO, original_filename: str, candidate_name: str = ""
 
     print(f"📂 Saved CV to {file_path}")
     return file_path
+

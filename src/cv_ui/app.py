@@ -74,14 +74,14 @@ if submitted:
             if response.success:
                 st.success(f"✅ {response.message}")
                 st.info("Your application has been recorded. You will receive updates soon.")
-                
+
                 with st.expander("📬 Submitted Info"):
                     st.json({
                         "full_name": response.candidate_name,
                         "email": response.email,
-                        "phone": phone,
+                            "phone": phone,
                         "cv_file_path": response.cv_file_path,
-                        "position": "AI Engineer",
+                            "position": "AI Engineer",
                     })
             
             elif response.already_exists:

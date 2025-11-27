@@ -33,8 +33,8 @@ with st.sidebar:
     if st.button("Start New Chat", type="primary", use_container_width=True):
         try:
             st.session_state.thread_id = client.new_chat()
-            st.session_state.messages = []
-            st.session_state.token_usage = 0
+        st.session_state.messages = []
+        st.session_state.token_usage = 0
         except Exception:
             st.error("⚠️ Cannot connect to API. Is the server running?")
         st.rerun()
