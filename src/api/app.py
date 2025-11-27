@@ -8,7 +8,7 @@ Run with:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import supervisor, cv_upload
+from src.api.routers import supervisor, cv_upload, voice_screener
 from src.configs import get_openai_settings
 
 # Validate OpenAI API key at startup (shows nice error if missing)
@@ -32,8 +32,7 @@ app.add_middleware(
 # Include routers
 app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
 app.include_router(cv_upload.router, prefix="/api/v1/cv", tags=["CV Upload"])
-### TODO: voice agent router
-### TODO: candiadte database router
+app.include_router(voice_screener.router, prefix="/api/v1/voice-screener", tags=["Voice Screener"])
 
 
 @app.get("/health")

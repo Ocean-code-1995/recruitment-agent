@@ -23,22 +23,13 @@ except ImportError:
 # Add src directory to path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Import analysis and database utilities
-try:
-    from src.frontend.streamlit.voice_screening_ui.analysis import analyze_transcript
-    from src.database.candidates import write_voice_results_to_db
-except ImportError as e:
-    # Will be handled later when used
-    analyze_transcript = None
-    write_voice_results_to_db = None
-
-
-# Try to import requests for health check (optional)
+# Try to import requests for API calls (required)
 try:
     import requests
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
+    raise ImportError("requests library is required for voice screening")
 
 # Helper function to get proxy URL
 def get_proxy_url():
@@ -53,6 +44,10 @@ def get_proxy_base_url():
     """Get HTTP base URL for proxy API calls."""
     proxy_url = get_proxy_url()
     return proxy_url.replace("ws://", "http://").replace("wss://", "https://").replace("/ws/realtime", "")
+
+def get_backend_url():
+    """Get backend API URL from environment or default."""
+    return os.getenv("BACKEND_API_URL", "http://localhost:8000")
 
 # Page configuration
 st.set_page_config(
@@ -164,24 +159,37 @@ with col1:
             st.rerun()
     else:
         if st.button("⏹️ End Interview", type="secondary", use_container_width=True):
-            # Save audio recording before ending interview
-            if st.session_state.session_id and st.session_state.session_token and HAS_REQUESTS:
+            # Save audio recording and transcript via backend API
+            if st.session_state.session_id and st.session_state.session_token and st.session_state.candidate_id and HAS_REQUESTS:
                 try:
-                    proxy_base = get_proxy_base_url()
+                    # Build transcript text
+                    transcript_text = "\n".join([
+                        f"{entry.get('speaker', 'unknown')}: {entry.get('text', '')}"
+                        for entry in st.session_state.transcript
+                        if entry.get("speaker") in ["agent", "candidate"]
+                    ])
+                    
+                    backend_url = get_backend_url()
                     response = requests.post(
-                        f"{proxy_base}/audio/save",
-                        params={"token": st.session_state.session_token},
-                        json={"session_id": st.session_state.session_id},
-                        timeout=10
+                        f"{backend_url}/api/v1/voice-screener/session/{st.session_state.session_id}/save",
+                        json={
+                            "session_id": st.session_state.session_id,
+                            "candidate_id": st.session_state.candidate_id,
+                            "transcript_text": transcript_text,
+                            "proxy_token": st.session_state.session_token
+                        },
+                        timeout=30
                     )
                     if response.status_code == 200:
                         data = response.json()
-                        st.session_state.audio_file_path = data.get("file_path")
-                        st.success(f"✅ Audio recording saved: {st.session_state.audio_file_path}")
+                        st.session_state.audio_file_path = data.get("audio_file_path")
+                        st.success(f"✅ Session saved successfully!")
+                        if st.session_state.audio_file_path:
+                            st.info(f"Audio: {st.session_state.audio_file_path}")
                     else:
-                        st.warning(f"⚠️ Failed to save audio: {response.text}")
+                        st.warning(f"⚠️ Failed to save session: {response.text}")
                 except Exception as e:
-                    st.warning(f"⚠️ Error saving audio: {e}")
+                    st.warning(f"⚠️ Error saving session: {e}")
             
             st.session_state.is_interview_active = False
             st.rerun()
@@ -285,51 +293,5 @@ if st.session_state.is_interview_active:
                     "timestamp": datetime.now().isoformat()
                 })
                 st.rerun()
-
-# Analysis and results
-if not st.session_state.is_interview_active and st.session_state.transcript:
-    st.markdown("---")
-    st.subheader("Interview Analysis")
-    
-    if st.button("📊 Analyze Interview", type="primary"):
-        # Build transcript text
-        transcript_text = "\n".join([
-            f"{entry.get('speaker', 'unknown')}: {entry.get('text', '')}"
-            for entry in st.session_state.transcript
-            if entry.get("speaker") in ["agent", "candidate"]
-        ])
-        
-        if not transcript_text.strip():
-            st.warning("⚠️ No transcript available to analyze.")
-        elif not analyze_transcript or not write_voice_results_to_db:
-            st.error("❌ Required modules not available. Please check imports.")
-        else:
-            with st.spinner("Analyzing transcript..."):
-                try:
-                    # Analyze transcript
-                    analysis_output = analyze_transcript(transcript_text)
-                    
-                    st.success("✅ Analysis complete!")
-                    st.json(analysis_output.model_dump())
-                    
-                    # Save to database
-                    if st.session_state.candidate_id:
-                        try:
-                            write_voice_results_to_db(
-                                candidate_id=st.session_state.candidate_id,
-                                session_id=st.session_state.session_id,
-                                transcript_text=transcript_text,
-                                result=analysis_output,
-                                audio_url=st.session_state.audio_file_path
-                            )
-                            st.success("✅ Results saved to database!")
-                        except Exception as e:
-                            st.error(f"❌ Failed to save results to database: {e}")
-                    else:
-                        st.warning("⚠️ Cannot save to database: Candidate ID not set.")
-                except Exception as e:
-                    st.error(f"❌ Failed to analyze transcript: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
         
         

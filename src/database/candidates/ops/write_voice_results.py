@@ -62,4 +62,3 @@ def write_voice_results_to_db(
         session.commit()
 
         print(f"✅ Voice screening results saved and status updated for candidate {candidate_id}")
-

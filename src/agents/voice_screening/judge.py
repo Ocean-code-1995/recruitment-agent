@@ -5,6 +5,7 @@ from uuid import UUID
 
 from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage
+from langchain.tools import tool
 from sqlalchemy import select
 
 from src.database.candidates.client import SessionLocal
@@ -25,6 +26,7 @@ SYSTEM_PROMPT = get_prompt(
 )
 
 
+@tool
 def evaluate_voice_screening(candidate_id: str) -> str:
     """
     Evaluates a completed voice screening session for a candidate.
@@ -141,3 +143,6 @@ def evaluate_voice_screening(candidate_id: str) -> str:
     except Exception as e:
         import traceback
         return f"❌ Error evaluating voice screening: {str(e)}\n{traceback.format_exc()}"
+
+# Alias for the tool to be used in supervisor
+voice_judge = evaluate_voice_screening
