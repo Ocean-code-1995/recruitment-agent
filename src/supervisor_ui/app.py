@@ -9,7 +9,10 @@ Locally, defaults to http://localhost:8080/api/v1/supervisor
 """
 
 import streamlit as st
-from src.supervisor_ui.utils import stream_response, create_new_chat
+from src.sdk import SupervisorClient
+
+# Initialize SDK client
+client = SupervisorClient()
 
 st.set_page_config(page_title="HR Supervisor Agent", layout="wide")
 
@@ -28,12 +31,11 @@ st.caption("I can query the candidate database and help with recruitment tasks."
 with st.sidebar:
     st.header("Controls")
     if st.button("Start New Chat", type="primary", use_container_width=True):
-        result = create_new_chat()
-        if result:
-            st.session_state.thread_id = result["thread_id"]
+        try:
+            st.session_state.thread_id = client.new_chat()
             st.session_state.messages = []
             st.session_state.token_usage = 0
-        else:
+        except Exception:
             st.error("⚠️ Cannot connect to API. Is the server running?")
         st.rerun()
     
@@ -65,29 +67,29 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
         message_placeholder = st.empty()
         full_response = ""
         
-        # Stream the response
-        for event_type, data in stream_response(prompt, st.session_state.thread_id):
-            if event_type == "token":
-                # Append token to response and update display
-                full_response += data.get("content", "")
+        # Stream the response using SDK
+        for chunk in client.stream(prompt, st.session_state.thread_id):
+            if chunk.type == "token":
+                full_response += chunk.content or ""
                 message_placeholder.markdown(full_response + "▌")
                 
-            elif event_type == "done":
+            elif chunk.type == "done":
                 # Update thread_id if this was first message
                 if st.session_state.thread_id is None:
-                    st.session_state.thread_id = data.get("thread_id")
+                    st.session_state.thread_id = chunk.thread_id
                 
                 # Update token usage
-                token_count = data.get("token_count", 0)
-                st.session_state.token_usage = token_count
-                token_metric_placeholder.metric(label="Context Window Tokens", value=token_count)
+                st.session_state.token_usage = chunk.token_count or 0
+                token_metric_placeholder.metric(
+                    label="Context Window Tokens", 
+                    value=chunk.token_count or 0
+                )
                 
                 # Final display without cursor
                 message_placeholder.markdown(full_response)
                 
-            elif event_type == "error":
-                error_msg = data.get("error", "Unknown error")
-                full_response = f"❌ Error: {error_msg}"
+            elif chunk.type == "error":
+                full_response = f"❌ Error: {chunk.error}"
                 message_placeholder.error(full_response)
         
         # Handle empty response
