@@ -112,10 +112,11 @@
 
     <script>
         const SESSION_ID = "{{SESSION_ID}}";
-        const API_KEY = "{{API_KEY}}";
+        const SESSION_TOKEN = "{{SESSION_TOKEN}}";
         // Use WebSocket proxy instead of direct OpenAI connection
         // Browsers cannot set custom headers, so we proxy through backend
-        const PROXY_URL = "{{PROXY_URL}}";  // Will be replaced by Streamlit
+        // Session token is included in query parameter for authentication
+        const PROXY_URL = "{{PROXY_URL}}";  // Will be replaced by Streamlit (includes token query param)
         const REALTIME_API_URL = PROXY_URL || "ws://localhost:8000/ws/realtime";
         
         let ws = null;
@@ -138,21 +139,22 @@
             clearDebugInfo();
             hideError();
             
-            if (!API_KEY) {
-                const errorMsg = "API key not found. Please check your environment configuration.";
+            if (!SESSION_TOKEN) {
+                const errorMsg = "Session token not found. Please authenticate first.";
                 showError(errorMsg);
-                updateStatus("Error: API key not found", "disconnected");
-                addDebugInfo("API Key Check", "API_KEY is empty or undefined");
+                updateStatus("Error: Not authenticated", "disconnected");
+                addDebugInfo("Session Token Check", "SESSION_TOKEN is empty or undefined");
                 return;
             }
             
             updateStatus("Connecting...", "disconnected");
             addDebugInfo("Connection Attempt", `Connecting to: ${REALTIME_API_URL}`);
-            addDebugInfo("API Key", API_KEY ? `${API_KEY.substring(0, 10)}...` : "Not set");
+            addDebugInfo("Session Token", SESSION_TOKEN ? `${SESSION_TOKEN.substring(0, 10)}...` : "Not set");
             
             // Connect through WebSocket proxy (handles authentication server-side)
-            // Direct OpenAI connection won't work from browser due to header limitations
-            addDebugInfo("Connection Method", "Using WebSocket proxy for authentication");
+            // Session token is passed as query parameter
+            // Session configuration and greeting are handled by proxy
+            addDebugInfo("Connection Method", "Using WebSocket proxy with session token authentication");
             addDebugInfo("Proxy URL", REALTIME_API_URL);
             
             try {
@@ -170,37 +172,9 @@
                 document.getElementById("micButton").disabled = false;
                 hideError();
                 addDebugInfo("Connection Success", "WebSocket connection established successfully");
-                
-                // Send session configuration
-                // Note: This requires proper authentication via WebSocket proxy
-                // For MVP, authentication should be handled server-side
-                ws.send(JSON.stringify({
-                    type: "session.update",
-                    session: {
-                        modalities: ["audio", "text"],
-                        instructions: "You are a friendly HR assistant conducting a phone screening interview. Greet the candidate warmly and ask them about their background and interest in the position.",
-                        voice: "alloy",
-                        input_audio_format: "pcm16",
-                        output_audio_format: "pcm16",
-                        turn_detection: {
-                            type: "server_vad",
-                            threshold: 0.5,
-                            prefix_padding_ms: 300,
-                            silence_duration_ms: 10000
-                        }
-                    }
-                }));
-                
-                // Send greeting after session is configured
-                setTimeout(() => {
-                    ws.send(JSON.stringify({
-                        type: "response.create",
-                        response: {
-                            modalities: ["audio", "text"],
-                            instructions: "Greet the candidate and ask them to tell you about themselves."
-                        }
-                    }));
-                }, 1000);
+                addDebugInfo("Session Config", "Session configuration handled by proxy");
+                // Session configuration and greeting are now handled by proxy
+                // No need to send them from client
             };
             
             ws.onmessage = (event) => {
