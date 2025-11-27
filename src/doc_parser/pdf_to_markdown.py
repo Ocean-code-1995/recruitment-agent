@@ -35,188 +35,27 @@ Set a custom output folder:
 | `--no-halves`         | Disable left/right column crops | Enabled by default |
 """
 
-import base64
-import io
-import json
+import argparse
 import os
-import re
 from datetime import datetime
-from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List
 
 from dotenv import load_dotenv
 from openai import OpenAI
-import pypdfium2 as pdfium
 from PIL import Image
-from ftfy import fix_text
-import argparse
 
-
-EMAIL_RE = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
-PHONE_RE = re.compile(r"(?:(?<=\s)|^)(\+\d{1,3}[\s()./-]?)?(?:\d[\s()/.-]?){6,}\d(?=\s|$)")
-URL_RE = re.compile(r"(?i)\b(?:https?://|www\.)[^\s<>'\"]+\.[^\s<>'\"]+")
-_BULLET_CHARS = {"•", "·", "-", "–", "—", "▪", "◦", "‣", "●", "○", ""}
-
-
-def normalize_bullets(text: str) -> str:
-    """Coerce common bullet characters to '- ' while keeping numbering."""
-    lines = text.splitlines()
-    normalized: List[str] = []
-
-    for line in lines:
-        stripped = line.lstrip()
-        if not stripped:
-            normalized.append(line)
-            continue
-
-        if re.match(r"^\d+[\.)]\s+", stripped):
-            normalized.append(line)
-            continue
-
-        first = stripped[0]
-        if first in _BULLET_CHARS or stripped.startswith(("- ", "* ")):
-            content = re.sub(
-                r"^([\-\*\u2022\u2023\u2043\u2219\u25E6\u25AA\u25CB\u25CF\u25A0]+\s+)", "", stripped
-            )
-            normalized.append(f"- {content.strip()}")
-        else:
-            normalized.append(line)
-
-    return "\n".join(normalized)
-
-
-def tag_contacts(text: str) -> str:
-    """Wrap detected email/phone/URL values with simple tags."""
-    tagged = EMAIL_RE.sub(lambda m: f"[EMAIL]{m.group(0)}[/EMAIL]", text)
-    tagged = PHONE_RE.sub(lambda m: f"[PHONE]{m.group(0)}[/PHONE]", tagged)
-    tagged = URL_RE.sub(lambda m: f"[URL]{m.group(0)}[/URL]", tagged)
-    return tagged
-
-
-def render_pdf_to_images(pdf_path: Path, target_width: int = 2000) -> List[Image.Image]:
-    """Step 1: PDF → Images (layout-preserving)."""
-    doc = pdfium.PdfDocument(str(pdf_path))
-    images: List[Image.Image] = []
-
-    for index in range(len(doc)):
-        page = doc[index]
-        width_pt, height_pt = page.get_size()
-        scale = max(1.0, float(target_width) / float(max(1.0, width_pt)))
-        bitmap = page.render(scale=scale)
-        img = bitmap.to_pil()
-        images.append(img)
-
-    page.close()
-    return images
-
-
-def pil_to_png_data_uri(img: Image.Image) -> str:
-    """Convert a PIL image to a PNG data URI (base64)."""
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
-    return f"data:image/png;base64,{b64}"
-
-
-def split_halves(img: Image.Image, overlap_px: int = 40) -> List[Image.Image]:
-    """Create left/right column crops with small overlap."""
-    w, h = img.size
-    mid = w // 2
-    left_box = (0, 0, min(mid + overlap_px, w), h)
-    right_box = (max(mid - overlap_px, 0), 0, w, h)
-    return [img.crop(left_box), img.crop(right_box)]
-
-
-def parse_sections_from_json_text(text: str) -> List[Dict[str, str]]:
-    """Parse STRICT JSON from the API (or extract JSON array from text)."""
-    try:
-        data = json.loads(text)
-        if isinstance(data, list):
-            out: List[Dict[str, str]] = []
-            for item in data:
-                if isinstance(item, dict):
-                    out.append(
-                        {
-                            "title": str(item.get("title", "")).strip(),
-                            "body": str(item.get("body", "")).strip(),
-                        }
-                    )
-            return out
-    except Exception:
-        pass
-
-    m = re.search(r"\[\s*\{[\s\S]*\}\s*\]", text)
-    if m:
-        try:
-            data = json.loads(m.group(0))
-            if isinstance(data, list):
-                out: List[Dict[str, str]] = []
-                for item in data:
-                    if isinstance(item, dict):
-                        out.append(
-                            {
-                                "title": str(item.get("title", "")).strip(),
-                                "body": str(item.get("body", "")).strip(),
-                            }
-                        )
-                return out
-        except Exception:
-            pass
-    return []
-
-
-def normalize_sections(sections: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """Step 3a: Normalize text encoding with ftfy."""
-    norm: List[Dict[str, str]] = []
-    for s in sections:
-        title = fix_text((s.get("title") or "").strip())
-        body = fix_text((s.get("body") or "").strip())
-        norm.append({"title": title, "body": body})
-    return norm
-
-
-def merge_duplicate_titles(sections: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """Step 3b: Merge duplicates while preserving order."""
-    merged: "OrderedDict[str, str]" = OrderedDict()
-
-    for s in sections:
-        title = s.get("title", "").strip()
-        body = (s.get("body", "") or "").strip()
-
-        if title in merged:
-            if body:
-                prev = merged[title]
-                merged[title] = (prev + ("\n\n" if prev else "") + body).strip()
-        else:
-            merged[title] = body
-
-    return [{"title": t, "body": b} for t, b in merged.items()]
-
-
-def build_contact_section_from_filename(pdf_file: Path) -> Dict[str, str]:
-    """Create a simple 'Adresse' section based solely on the PDF filename."""
-    stem = pdf_file.stem.replace("_", " ").strip()
-    tokens = stem.split(maxsplit=1)
-    if tokens and len(tokens[0]) == 1 and tokens[0].isalpha():
-        stem = tokens[1] if len(tokens) > 1 else ""
-    name = stem.strip() or pdf_file.name
-    return {"title": "Adresse", "body": f"Name: {name}"}
-
-
-def process_section(section: Dict[str, str]) -> Dict[str, str]:
-    """Normalize bullets and tag contact info for a single section."""
-    title = section.get("title", "")
-    body = section.get("body", "")
-    return {
-        "title": tag_contacts(normalize_bullets(title)),
-        "body": tag_contacts(normalize_bullets(body)),
-    }
-
-
-def apply_postprocessing(sections: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """Step 3c: Tag contacts and normalize bullets."""
-    return [process_section(s) for s in sections]
+from .utils import (
+    render_pdf_to_images,
+    pil_to_png_data_uri,
+    split_halves,
+    parse_sections_from_json_text,
+    normalize_sections,
+    merge_duplicate_titles,
+    build_contact_section_from_filename,
+    process_section,
+    apply_postprocessing,
+)
 
 
 def pdf_to_markdown(
@@ -424,4 +263,3 @@ if __name__ == "__main__":
         max_output_tokens=args.max_output_tokens,
         add_halves=not args.no_halves,
     )
-
