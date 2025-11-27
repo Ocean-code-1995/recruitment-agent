@@ -74,10 +74,10 @@ if "transcript" not in st.session_state:
 if "is_interview_active" not in st.session_state:
     st.session_state.is_interview_active = False
 if "candidate_id" not in st.session_state:
-    # Default to dummy candidate for testing
-    st.session_state.candidate_id = "df156a0e-7ff6-4e5b-ae34-43c4dc5791b2"
+    st.session_state.candidate_id = None
 if "session_token" not in st.session_state:
     st.session_state.session_token = None
+
 if "user_email" not in st.session_state:
     st.session_state.user_email = None
 if "auth_code" not in st.session_state:
@@ -145,18 +145,16 @@ with col_header2:
 
 # Candidate selection
 with st.expander("Candidate Information", expanded=True):
-    st.info(f"Current Candidate ID: `{st.session_state.candidate_id}`")
-    candidate_email = st.text_input("Override Candidate Email", placeholder="candidate@example.com")
+    if st.session_state.candidate_id:
+        st.info(f"Current Candidate ID: `{st.session_state.candidate_id}`")
+    else:
+        st.warning("⚠️ No candidate selected. Please provide a Candidate ID.")
+        
+    candidate_id_input = st.text_input("Enter Candidate ID", value=st.session_state.candidate_id or "")
     
-    if candidate_email:
-        if candidate_email == "test_candidate@example.com":
-            st.session_state.candidate_id = "df156a0e-7ff6-4e5b-ae34-43c4dc5791b2"
-            st.success(f"✅ Using Test Candidate ID")
-        else:
-            # Generate new random ID for other emails
-            new_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, candidate_email))
-            st.session_state.candidate_id = new_id
-            st.warning(f"⚠️ Generated ID for {candidate_email}: {new_id}. Ensure this exists in DB!")
+    if candidate_id_input and candidate_id_input != st.session_state.candidate_id:
+        st.session_state.candidate_id = candidate_id_input
+        st.success(f"✅ Candidate ID set to: {candidate_id_input}")
 
 # Interview controls
 col1, col2 = st.columns(2)

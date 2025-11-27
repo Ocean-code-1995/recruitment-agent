@@ -12,7 +12,7 @@ from sqlalchemy import select, desc
 from src.database.candidates.client import SessionLocal
 from src.database.candidates.models import Candidate, CVScreeningResult, VoiceScreeningResult
 from src.state.candidate import CandidateStatus
-from src.frontend.streamlit.voice_screening_ui.utils.questions import get_screening_questions
+from src.agents.voice_screening.utils.questions import get_screening_questions
 
 logger = logging.getLogger(__name__)
 
