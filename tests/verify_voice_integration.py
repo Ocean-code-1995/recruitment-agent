@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.database.candidates.models import Candidate, CVScreeningResult, Base
 from src.database.candidates.client import SessionLocal, engine
-from src.voice_screening_ui.utils.questions import get_screening_questions
+from src.frontend.streamlit.voice_screening_ui.utils.questions import get_screening_questions
 
 def verify_integration():
     print("Verifying integration...")

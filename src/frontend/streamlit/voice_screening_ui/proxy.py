@@ -21,7 +21,7 @@ import aiohttp
 from sqlalchemy import select, desc
 from src.database.candidates.models import Candidate, CVScreeningResult
 from src.database.candidates.client import SessionLocal
-from src.voice_screening_ui.utils.questions import get_screening_questions
+from src.frontend.streamlit.voice_screening_ui.utils.questions import get_screening_questions
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -663,7 +663,7 @@ async def save_audio(request: SaveAudioRequest, token: Optional[str] = Query(Non
         wav_data = combine_and_export_audio(token, request.session_id)
         
         # Import here to avoid circular imports
-        from src.voice_screening_ui.utils.save_voice_recording import save_voice_recording
+        from src.frontend.streamlit.voice_screening_ui.utils.save_voice_recording import save_voice_recording
         
         # Save to disk
         file_path = save_voice_recording(wav_data, request.session_id)

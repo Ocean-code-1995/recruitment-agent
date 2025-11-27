@@ -2,7 +2,7 @@
 CV Upload UI for Job Applications.
 
 Connects to the CV Upload API.
-Run with: streamlit run src/cv_ui/app.py
+Run with: streamlit run src/frontend/streamlit/cv_ui/app.py
 
 In Docker, set CV_UPLOAD_API_URL environment variable.
 Locally, defaults to http://localhost:8080/api/v1/cv

@@ -89,6 +89,7 @@ services:
       - ../:/app
       # Shared volume for CV uploads (persistent)
       - ../src/database/cvs:/app/src/database/cvs
+    command: ["streamlit", "run", "src/frontend/streamlit/cv_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
 
@@ -111,7 +112,7 @@ services:
     volumes:
       # Mount local code for live updates
       - ../:/app
-    command: ["python", "-m", "uvicorn", "src.voice_screening_ui.proxy:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["python", "-m", "uvicorn", "src.frontend.streamlit.voice_screening_ui.proxy:app", "--host", "0.0.0.0", "--port", "8000"]
     networks:
       - hrnet
 
@@ -136,7 +137,7 @@ services:
     volumes:
       # Mount local code for live updates
       - ../:/app
-    command: ["streamlit", "run", "src/voice_screening_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    command: ["streamlit", "run", "src/frontend/streamlit/voice_screening_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
 
@@ -187,6 +188,7 @@ services:
     volumes:
       # Mount local code for live updates
       - ../:/app
+    command: ["streamlit", "run", "src/frontend/streamlit/supervisor_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
 

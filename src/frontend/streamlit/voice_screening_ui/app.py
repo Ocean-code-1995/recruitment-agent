@@ -25,8 +25,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import analysis and database utilities
 try:
-    from src.voice_screening_ui.analysis import analyze_transcript
-    from src.voice_screening_ui.utils.db import write_voice_results_to_db
+    from src.frontend.streamlit.voice_screening_ui.analysis import analyze_transcript
+    from src.frontend.streamlit.voice_screening_ui.utils.db import write_voice_results_to_db
 except ImportError as e:
     # Will be handled later when used
     analyze_transcript = None
