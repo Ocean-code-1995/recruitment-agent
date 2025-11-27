@@ -2,20 +2,26 @@
 SDK for interacting with Recruitment Agent APIs.
 
 Usage:
-    from src.sdk import SupervisorClient
+    from src.sdk import SupervisorClient, CVUploadClient
     
-    client = SupervisorClient()
-    
-    # Simple chat
-    response = client.chat("Show me all candidates")
+    # Supervisor Agent
+    supervisor = SupervisorClient()
+    response = supervisor.chat("Show me all candidates")
     print(response.content)
     
-    # Streaming chat
-    for chunk in client.stream("Show me all candidates"):
-        print(chunk.content, end="", flush=True)
+    # CV Upload
+    cv_client = CVUploadClient()
+    with open("my_cv.pdf", "rb") as f:
+        response = cv_client.submit(
+            full_name="Ada Lovelace",
+            email="ada@example.com",
+            cv_file=f,
+            filename="my_cv.pdf"
+        )
 """
 
 from src.sdk.supervisor import SupervisorClient
+from src.sdk.cv_upload import CVUploadClient
 
-__all__ = ["SupervisorClient"]
+__all__ = ["SupervisorClient", "CVUploadClient"]
 

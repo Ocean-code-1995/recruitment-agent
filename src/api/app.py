@@ -8,7 +8,7 @@ Run with:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import supervisor
+from src.api.routers import supervisor, cv_upload
 
 app = FastAPI(
     title="Recruitment Agent API",
@@ -27,6 +27,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
+app.include_router(cv_upload.router, prefix="/api/v1/cv", tags=["CV Upload"])
 
 
 @app.get("/health")

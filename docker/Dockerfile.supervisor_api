@@ -14,7 +14,9 @@ COPY requirements/db.txt requirements/db.txt
 COPY requirements/agent.txt requirements/agent.txt
 COPY requirements/supervisor.txt requirements/supervisor.txt
 COPY requirements/api.txt requirements/api.txt
+COPY requirements/cv_ui.txt requirements/cv_ui.txt
 COPY requirements/mcp_calendar.txt requirements/mcp_calendar.txt
+COPY requirements/mcp_gmail.txt requirements/mcp_gmail.txt
 
 # Install dependencies directly (no venv needed in container)
 # **NOTE** uv installation is needed for the gmail mcp server to work.
@@ -24,7 +26,9 @@ RUN pip install --no-cache-dir uv && \
     pip install --no-cache-dir -r requirements/db.txt && \
     pip install --no-cache-dir -r requirements/agent.txt && \
     pip install --no-cache-dir -r requirements/api.txt && \
-    pip install --no-cache-dir -r requirements/mcp_calendar.txt
+    pip install --no-cache-dir -r requirements/cv_ui.txt && \
+    pip install --no-cache-dir -r requirements/mcp_calendar.txt && \
+    pip install --no-cache-dir -r requirements/mcp_gmail.txt
 
 # Copy application code
 COPY src/ /app/src/
