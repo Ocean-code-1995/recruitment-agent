@@ -2,7 +2,7 @@
 SDK for interacting with Recruitment Agent APIs.
 
 Usage:
-    from src.sdk import SupervisorClient, CVUploadClient
+    from src.sdk import SupervisorClient, CVUploadClient, DatabaseClient
     
     # Supervisor Agent
     supervisor = SupervisorClient()
@@ -18,10 +18,16 @@ Usage:
             cv_file=f,
             filename="my_cv.pdf"
         )
+    
+    # Database Queries
+    db = DatabaseClient()
+    candidates = db.get_candidates(status="applied")
+    candidate = db.get_candidate_by_email("ada@example.com")
 """
 
 from src.sdk.supervisor import SupervisorClient
 from src.sdk.cv_upload import CVUploadClient
+from src.sdk.database import DatabaseClient
 
-__all__ = ["SupervisorClient", "CVUploadClient"]
+__all__ = ["SupervisorClient", "CVUploadClient", "DatabaseClient"]
 
