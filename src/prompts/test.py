@@ -8,7 +8,7 @@ sys.path.append(project_root)
 from src.prompts import get_prompt
 
 def test_fetch_prompt():
-    prompt_name = "Supervisor"
+    prompt_name = "DB_Executor"
     print(f"Attempting to fetch prompt: {prompt_name}")
     
     try:

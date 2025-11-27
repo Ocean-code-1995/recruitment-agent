@@ -5,15 +5,16 @@ import uuid
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 
-
 # Load env vars
 load_dotenv()
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from src.agents.supervisor.supervisor_v2 import supervisor_agent
-from src.supervisor_ui.utils.token_counter import count_tokens_for_messages
+# Import the wrapper instead of the raw agent
+from src.context_eng.context_manager import compacting_supervisor
+# Token counter for display purposes
+from src.context_eng.context_manager import count_tokens_for_messages
 
 st.set_page_config(page_title="HR Supervisor Agent", layout="wide")
 
@@ -70,24 +71,22 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
                 # Config for stateful conversation (checkpointer)
                 config = {"configurable": {"thread_id": st.session_state.thread_id}}
                 
-                # Run the agent with ONLY the new message
-                # Because we use a checkpointer, the agent "remembers" previous messages automatically
-                response = supervisor_agent.invoke(
+                # Run the wrapped agent
+                # The wrapper handles compaction internally if needed
+                response = compacting_supervisor.invoke(
                     {"messages": [HumanMessage(content=prompt)]},
                     config=config
                 )
                 
                 # Extract the final response from the agent
-                # LangGraph returns the final state. We want the last AIMessage.
                 final_message = response["messages"][-1]
                 full_response = final_message.content
                 
-                # Calculate tokens for the FULL history (context window)
+                # Calculate tokens for display
                 all_messages = response["messages"]
                 total_tokens = count_tokens_for_messages(all_messages)
-                st.session_state.token_usage = total_tokens
                 
-                # Update sidebar immediately
+                st.session_state.token_usage = total_tokens
                 token_metric_placeholder.metric(label="Context Window Tokens", value=total_tokens)
                 
                 message_placeholder.markdown(full_response)
