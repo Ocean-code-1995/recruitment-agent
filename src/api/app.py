@@ -9,6 +9,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers import supervisor, cv_upload
+from src.configs import get_openai_settings
+
+# Validate OpenAI API key at startup (shows nice error if missing)
+get_openai_settings()
 
 app = FastAPI(
     title="Recruitment Agent API",
@@ -28,17 +32,21 @@ app.add_middleware(
 # Include routers
 app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
 app.include_router(cv_upload.router, prefix="/api/v1/cv", tags=["CV Upload"])
+### TODO: voice agent router
+### TODO: candiadte database router
 
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint."""
+async def health_check() -> dict[str, str]:
+    """Health check endpoint.
+    """
     return {"status": "healthy"}
 
 
 @app.get("/")
 async def root():
-    """Root endpoint with API info."""
+    """Root endpoint with API info.
+    """
     return {
         "message": "Recruitment Agent API",
         "docs": "/docs",
