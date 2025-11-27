@@ -1,11 +1,7 @@
 """
 Run as follows:
->>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python scripts/db/wipe.py
-
-This script wipes the database by truncating the candidates table.
-It also truncates all related tables (CASCADE).
+>>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 POSTGRES_PASSWORD=password123 python -m scripts.db.wipe
 """
-
 
 import sys
 import os
