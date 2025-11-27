@@ -1,20 +1,19 @@
-import streamlit as st
-import sys
+"""
+Streamlit UI for HR Supervisor Agent.
+
+Connects to the Supervisor API.
+Run with: streamlit run src/supervisor_ui/app.py
+
+In Docker, set SUPERVISOR_API_URL environment variable.
+Locally, defaults to http://localhost:8080/api/v1/supervisor
+"""
+
 import os
-import uuid
-from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
+import streamlit as st
+import requests
 
-# Load env vars
-load_dotenv()
-
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
-# Import the wrapper instead of the raw agent
-from src.context_eng.context_manager import compacting_supervisor
-# Token counter for display purposes
-from src.context_eng.context_manager import count_tokens_for_messages
+# API Configuration - use env var in Docker, fallback for local dev
+API_BASE_URL = os.getenv("SUPERVISOR_API_URL", "http://localhost:8080/api/v1/supervisor")
 
 st.set_page_config(page_title="HR Supervisor Agent", layout="wide")
 
@@ -22,9 +21,9 @@ st.set_page_config(page_title="HR Supervisor Agent", layout="wide")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize thread_id for LangGraph memory
+# Initialize thread_id for conversation continuity
 if "thread_id" not in st.session_state:
-    st.session_state.thread_id = str(uuid.uuid4())[:8]
+    st.session_state.thread_id = None
 
 st.title("🤖 HR Supervisor Agent")
 st.caption("I can query the candidate database and help with recruitment tasks.")
@@ -33,9 +32,18 @@ st.caption("I can query the candidate database and help with recruitment tasks."
 with st.sidebar:
     st.header("Controls")
     if st.button("Start New Chat", type="primary", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.thread_id = str(uuid.uuid4())[:8]
-        st.session_state.token_usage = 0
+        # Call API to create new chat session
+        try:
+            response = requests.post(f"{API_BASE_URL}/new")
+            if response.status_code == 200:
+                data = response.json()
+                st.session_state.thread_id = data["thread_id"]
+                st.session_state.messages = []
+                st.session_state.token_usage = 0
+            else:
+                st.error("Failed to create new chat session")
+        except requests.exceptions.ConnectionError:
+            st.error("⚠️ Cannot connect to API. Is the server running?")
         st.rerun()
     
     st.divider()
@@ -68,28 +76,42 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
         
         with st.spinner("Thinking..."):
             try:
-                # Config for stateful conversation (checkpointer)
-                config = {"configurable": {"thread_id": st.session_state.thread_id}}
+                # Call the API
+                payload = {
+                    "message": prompt,
+                    "thread_id": st.session_state.thread_id
+                }
                 
-                # Run the wrapped agent
-                # The wrapper handles compaction internally if needed
-                response = compacting_supervisor.invoke(
-                    {"messages": [HumanMessage(content=prompt)]},
-                    config=config
+                response = requests.post(
+                    f"{API_BASE_URL}/chat",
+                    json=payload,
+                    timeout=120  # Long timeout for agent processing
                 )
                 
-                # Extract the final response from the agent
-                final_message = response["messages"][-1]
-                full_response = final_message.content
-                
-                # Calculate tokens for display
-                all_messages = response["messages"]
-                total_tokens = count_tokens_for_messages(all_messages)
-                
-                st.session_state.token_usage = total_tokens
-                token_metric_placeholder.metric(label="Context Window Tokens", value=total_tokens)
-                
-                message_placeholder.markdown(full_response)
+                if response.status_code == 200:
+                    data = response.json()
+                    full_response = data["response"]
+                    
+                    # Update thread_id if this was first message
+                    if st.session_state.thread_id is None:
+                        st.session_state.thread_id = data["thread_id"]
+                    
+                    # Update token usage
+                    st.session_state.token_usage = data["token_count"]
+                    token_metric_placeholder.metric(label="Context Window Tokens", value=data["token_count"])
+                    
+                    message_placeholder.markdown(full_response)
+                else:
+                    error_detail = response.json().get("detail", "Unknown error")
+                    full_response = f"❌ API Error: {error_detail}"
+                    message_placeholder.error(full_response)
+                    
+            except requests.exceptions.ConnectionError:
+                full_response = "❌ Cannot connect to API. Make sure the server is running:\n\n`uvicorn src.api.app:app --reload --port 8080`"
+                message_placeholder.error(full_response)
+            except requests.exceptions.Timeout:
+                full_response = "❌ Request timed out. The agent is taking too long to respond."
+                message_placeholder.error(full_response)
             except Exception as e:
                 full_response = f"❌ Error: {str(e)}"
                 message_placeholder.error(full_response)
