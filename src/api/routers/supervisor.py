@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 
 from langchain_core.messages import HumanMessage
 from src.api.schemas.supervisor_chat import ChatRequest, ChatResponse, NewChatResponse
-from src.context_eng.context_manager import compacting_supervisor, count_tokens_for_messages
+from src.context_eng import compacting_supervisor, count_tokens_for_messages
 
 
 router = APIRouter()
