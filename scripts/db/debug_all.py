@@ -2,13 +2,21 @@
 Run all database debug checks.
 
 Run as follows:
->>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python scripts/db/debug_all.py
+>>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 POSTGRES_PASSWORD=password123 python -m scripts.db.debug_all
 
 This runs:
 1. Connection test
 2. Session query test
 3. List existing candidates
 """
+
+import sys
+import os
+
+# Add project root to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from scripts.db.test_connection import test_connection
 from scripts.db.test_session import test_session_query
@@ -50,4 +58,3 @@ def run_all_checks() -> None:
 
 if __name__ == "__main__":
     run_all_checks()
-
