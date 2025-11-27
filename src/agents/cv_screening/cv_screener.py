@@ -10,7 +10,8 @@ from langchain.messages import SystemMessage, HumanMessage
 
 from dotenv import load_dotenv
 from src.agents.cv_screening.schemas.output_schema import CVScreeningOutput
-from src.agents.cv_screening.utils import read_file, write_results_to_db
+from src.agents.cv_screening.utils import read_file
+from src.database.candidates import write_cv_results_to_db
 from src.prompts import get_prompt
 
 load_dotenv()
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     print(json.dumps(result.model_dump(), indent=2))
 
     # optionally write to DB
-    write_results_to_db(
+    write_cv_results_to_db(
         candidate_email="sebastianwefersnz@gmail.com",
         result=result,
         job_title="AI Engineer"

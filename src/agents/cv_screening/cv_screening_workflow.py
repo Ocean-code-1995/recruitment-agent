@@ -3,9 +3,9 @@ from langchain_core.tools import tool
 
 
 from src.agents.cv_screening.cv_screener import screen_cv
-from src.agents.cv_screening.utils import (
-    read_file,
-    write_results_to_db,
+from src.agents.cv_screening.utils import read_file
+from src.database.candidates import (
+    write_cv_results_to_db,
     get_candidate_by_name,
 )
 
@@ -82,7 +82,7 @@ def cv_screening_workflow(candidate_full_name: str = "") -> str:
     # 4️⃣ Store results in DB & update status
     print("💾 Saving results to database...")
     try:
-        write_results_to_db(
+        write_cv_results_to_db(
             candidate_email=candidate_email,
             result=result,
             job_title="AI Engineer"

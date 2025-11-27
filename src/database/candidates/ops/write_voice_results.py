@@ -1,45 +1,41 @@
-"""
-Database utilities for voice screening results.
-Simplified version - no Twilio call_sid needed.
-"""
-import sys
-from pathlib import Path
+"""Write voice screening results to the database."""
 
-# Add parent directory to path to enable imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
+import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
 from src.database.candidates.client import SessionLocal
 from src.database.candidates.models import Candidate, VoiceScreeningResult
 from src.state.candidate import CandidateStatus
-from src.agents.voice_screening.schemas.output_schema import VoiceScreeningOutput
+
+if TYPE_CHECKING:
+    from src.agents.voice_screening.schemas.output_schema import VoiceScreeningOutput
 
 
 def write_voice_results_to_db(
     candidate_id: str,
     session_id: str,
     transcript_text: str,
-    result: VoiceScreeningOutput,
+    result: "VoiceScreeningOutput",
     audio_url: Optional[str] = None
 ) -> None:
     """
     Store the voice screening results in the database and update candidate status.
-    
+
     Args:
-        candidate_id (str): UUID of the candidate.
-        session_id (str): Session identifier (replaces call_sid for web sessions).
-        transcript_text (str): Full conversation transcript.
-        result (VoiceScreeningOutput): The screening results from the LLM.
-        audio_url (str, optional): URL to the call recording if available.
+        candidate_id: UUID of the candidate.
+        session_id: Session identifier (call_sid for Twilio, session_id for web).
+        transcript_text: Full conversation transcript.
+        result: The screening results from the LLM (VoiceScreeningOutput).
+        audio_url: URL to the call recording if available.
     
     Returns:
         None
     """
-    import uuid
-    
     with SessionLocal() as session:
-        candidate = session.query(Candidate).filter_by(id=uuid.UUID(candidate_id)).first()
+        candidate = session.query(Candidate).filter_by(
+            id=uuid.UUID(candidate_id)
+        ).first()
 
         if not candidate:
             print(f"⚠️ No candidate found with ID: {candidate_id}")
@@ -48,7 +44,7 @@ def write_voice_results_to_db(
         # Create new voice screening result entry
         screening_entry = VoiceScreeningResult(
             candidate_id=candidate.id,
-            call_sid=session_id,  # Using session_id instead of Twilio call_sid
+            call_sid=session_id,
             transcript_text=transcript_text,
             sentiment_score=result.sentiment_score,
             confidence_score=result.confidence_score,

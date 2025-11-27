@@ -25,6 +25,11 @@ class DatabaseSettings(BaseSettings):
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
     
     @property
+    def psycopg2_url(self) -> str:
+        """Build database URL with psycopg2 driver."""
+        return f"postgresql+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
+    
+    @property
     def async_url(self) -> str:
         """Build async database URL for SQLAlchemy async."""
         return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"

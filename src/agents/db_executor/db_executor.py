@@ -10,7 +10,7 @@ from src.database.candidates.models import (
 from langchain_core.tools import tool
 from typing import Dict, Any
 from src.prompts import get_prompt
-from src.agents.cv_screening.utils.db import evaluate_cv_screening_decision
+from src.database.candidates import evaluate_cv_screening_decision
 
 
 SYSTEM_PROMPT = get_prompt(

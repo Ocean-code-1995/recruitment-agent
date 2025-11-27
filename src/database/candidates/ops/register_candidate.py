@@ -1,8 +1,4 @@
-"""
-Candidate database operations.
-
-This module provides functions for managing candidates in the database.
-"""
+"""Register a new candidate in the database."""
 
 from sqlalchemy.exc import IntegrityError
 
@@ -46,23 +42,4 @@ def register_candidate(
             session.rollback()
             print(f"⚠️ Candidate with email '{email}' already exists.")
             return False
-
-
-def update_parsed_cv_path(email: str, parsed_path: str) -> None:
-    """
-    Update the parsed CV file path for a candidate identified by email.
-
-    Args:
-        email: Candidate's email (unique identifier).
-        parsed_path: Path to the parsed markdown file.
-    """
-    with SessionLocal() as session:
-        candidate = session.query(Candidate).filter_by(email=email).first()
-        if not candidate:
-            print(f"⚠️ No candidate found with email: {email}")
-            return
-
-        candidate.parsed_cv_file_path = parsed_path
-        session.commit()
-        print(f"✅ Updated parsed CV path for {email}: {parsed_path}")
 

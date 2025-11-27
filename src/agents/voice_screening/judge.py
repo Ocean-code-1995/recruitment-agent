@@ -19,6 +19,11 @@ import os
 # Initialize LLM
 # We will instantiate the model dynamically based on input availability
 
+SYSTEM_PROMPT = get_prompt(
+    template_name="Voice_Screening_Judge",
+    latest_version=True
+)
+
 
 def evaluate_voice_screening(candidate_id: str) -> str:
     """
@@ -62,14 +67,7 @@ def evaluate_voice_screening(candidate_id: str) -> str:
             # 2. Prepare Input (Audio + Text)
             messages = []
             
-            system_prompt = (
-                "You are an expert HR interviewer and technical judge. "
-                "Your task is to evaluate a voice screening interview. "
-                "Analyze the candidate's responses for Tone, Confidence, Communication Skills, and Role Proficiency. "
-                "Provide scores from 0.0 to 1.0 for each category. "
-                "Provide a summary and a final recommendation (Pass/Fail)."
-            )
-            messages.append(SystemMessage(content=system_prompt))
+            messages.append(SystemMessage(content=SYSTEM_PROMPT))
             
             user_content = []
             user_content.append({"type": "text", "text": f"Candidate: {candidate.full_name}\nPosition: {job_title}\n"})
