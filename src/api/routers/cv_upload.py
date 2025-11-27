@@ -4,11 +4,11 @@ CV Upload Router.
 Handles CV submission and candidate registration.
 """
 
-import os
 from pathlib import Path
-from pydantic import BaseModel, Field, EmailStr
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
+from src.api.schemas.cv_upload import SubmitResponse
+from src.configs import get_cv_settings
 from src.database.candidates import register_candidate, update_parsed_cv_path
 from src.database.cvs import save_cv
 from src.doc_parser import pdf_to_markdown
@@ -16,25 +16,9 @@ from src.doc_parser import pdf_to_markdown
 
 router = APIRouter()
 
-# Configuration
-UPLOAD_DIR = Path(os.getenv("CV_UPLOAD_PATH", "src/database/cvs/uploads"))
-PARSED_DIR = Path(os.getenv("CV_PARSED_PATH", "src/database/cvs/parsed"))
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(PARSED_DIR, exist_ok=True)
-
-
-# ==================================================================================
-# RESPONSE MODELS
-# ==================================================================================
-
-class SubmitResponse(BaseModel):
-    """Response model for CV submission."""
-    success: bool = Field(..., description="Whether the submission was successful")
-    message: str = Field(..., description="Status message")
-    candidate_name: str = Field(default="", description="Name of the candidate")
-    email: str = Field(default="", description="Email of the candidate")
-    cv_file_path: str = Field(default="", description="Path where CV was saved")
-    already_exists: bool = Field(default=False, description="True if candidate already applied")
+# Load settings and ensure directories exist
+settings = get_cv_settings()
+settings.ensure_dirs()
 
 
 # ==================================================================================
@@ -88,12 +72,12 @@ async def submit_application(
         # 3. Parse CV to markdown
         pdf_to_markdown(
             input_path=file_path,
-            output_path=PARSED_DIR,
+            output_path=settings.parsed_path,
             model="gpt-4.1-mini",
         )
         
         # 4. Update parsed CV path in DB
-        parsed_path = PARSED_DIR / (file_path.stem + ".txt")
+        parsed_path = settings.parsed_path / (file_path.stem + ".txt")
         update_parsed_cv_path(email, str(parsed_path))
         
         return SubmitResponse(
