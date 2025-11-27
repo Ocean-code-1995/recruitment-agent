@@ -23,6 +23,7 @@ from src.agents import (
     cv_screening_workflow,
     gcalendar_agent,
     gmail_agent,
+    voice_judge,
 )
 
 SYSTEM_PROMPT = get_prompt(
