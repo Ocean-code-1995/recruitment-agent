@@ -1,6 +1,6 @@
 """
 Run as follows:
->>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python scripts/wipe_db.py
+>>> POSTGRES_HOST=localhost POSTGRES_PORT=5433 python scripts/db/wipe.py
 
 This script wipes the database by truncating the candidates table.
 It also truncates all related tables (CASCADE).
@@ -12,9 +12,7 @@ import os
 from sqlalchemy import text
 
 # Add project root to sys.path
-# This assumes the script is located at scripts/wipe_db.py
-# We need to go up 1 level to reach the project root
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 sys.path.append(project_root)
 
 from src.database.candidates.client import get_engine

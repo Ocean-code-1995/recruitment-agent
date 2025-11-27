@@ -9,7 +9,7 @@ set -euo pipefail
 
 # --- resolve paths ---
 script_dir="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-TF_DIR="${TF_DIR:-${script_dir}/../terraform}"
+TF_DIR="${TF_DIR:-${script_dir}/../../terraform}"
 TFVARS_PATH="${TFVARS_PATH:-${TF_DIR}/terraform.tfvars}"
 
 # --- helpers ---
