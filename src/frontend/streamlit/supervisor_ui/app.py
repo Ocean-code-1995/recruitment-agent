@@ -62,40 +62,56 @@ if prompt := st.chat_input("Ask me anything about candidates..."):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generate streaming response
+    # Generate response using chat (with CompactingSupervisor wrapper)
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
         
-        # Stream the response using SDK
-        for chunk in client.stream(prompt, st.session_state.thread_id):
-            if chunk.type == "token":
-                full_response += chunk.content or ""
-                message_placeholder.markdown(full_response + "▌")
-                
-            elif chunk.type == "done":
-                # Update thread_id if this was first message
-                if st.session_state.thread_id is None:
-                    st.session_state.thread_id = chunk.thread_id
-                
-                # Update token usage
-                st.session_state.token_usage = chunk.token_count or 0
-                token_metric_placeholder.metric(
-                    label="Context Window Tokens", 
-                    value=chunk.token_count or 0
-                )
-                
-                # Final display without cursor
-                message_placeholder.markdown(full_response)
-                
-            elif chunk.type == "error":
-                full_response = f"❌ Error: {chunk.error}"
-                message_placeholder.error(full_response)
+        try:
+            # Use chat endpoint (with context compaction)
+            with st.spinner("Thinking..."):
+                response = client.chat(prompt, st.session_state.thread_id)
+            
+            full_response = response.content
+            message_placeholder.markdown(full_response)
+            
+            # Update thread_id if this was first message
+            if st.session_state.thread_id is None:
+                st.session_state.thread_id = response.thread_id
+            
+            # Update token usage
+            st.session_state.token_usage = response.token_count
+            token_metric_placeholder.metric(
+                label="Context Window Tokens", 
+                value=response.token_count
+            )
+            
+        except Exception as e:
+            full_response = f"❌ Error: {str(e)}"
+            message_placeholder.error(full_response)
         
         # Handle empty response
         if not full_response:
             full_response = "No response received from agent."
             message_placeholder.warning(full_response)
+        
+        # --- STREAMING RAW VERSION (commented out) ---
+        # for chunk in client.stream_raw(prompt, st.session_state.thread_id):
+        #     if chunk.type == "token":
+        #         full_response += chunk.content or ""
+        #         message_placeholder.markdown(full_response + "▌")
+        #     elif chunk.type == "done":
+        #         if st.session_state.thread_id is None:
+        #             st.session_state.thread_id = chunk.thread_id
+        #         st.session_state.token_usage = chunk.token_count or 0
+        #         token_metric_placeholder.metric(
+        #             label="Context Window Tokens", 
+        #             value=chunk.token_count or 0
+        #         )
+        #         message_placeholder.markdown(full_response)
+        #     elif chunk.type == "error":
+        #         full_response = f"❌ Error: {chunk.error}"
+        #         message_placeholder.error(full_response)
 
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": full_response})
