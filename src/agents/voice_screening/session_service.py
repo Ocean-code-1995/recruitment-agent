@@ -119,7 +119,6 @@ def save_voice_screening_session(
             sentiment_score=None,
             confidence_score=None,
             communication_score=None,
-            proficiency_score=None,
             llm_summary=None,
         )
 

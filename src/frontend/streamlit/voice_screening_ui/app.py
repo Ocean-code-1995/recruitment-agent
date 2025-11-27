@@ -32,17 +32,27 @@ except ImportError:
     raise ImportError("requests library is required for voice screening")
 
 # Helper function to get proxy URL
-def get_proxy_url():
-    """Get WebSocket proxy URL from environment or default."""
+def get_proxy_url(for_client=False):
+    """
+    Get WebSocket proxy URL from environment or default.
+    
+    Args:
+        for_client (bool): If True, returns a URL accessible from the browser (localhost).
+                          If False, returns the internal Docker URL (websocket_proxy).
+    """
     proxy_url = os.getenv("WEBSOCKET_PROXY_URL", "ws://localhost:8000/ws/realtime")
-    # Convert Docker internal URL to browser-accessible URL
-    if "websocket_proxy" in proxy_url:
-        proxy_url = proxy_url.replace("websocket_proxy", "localhost")
+    
+    if for_client:
+        # Convert Docker internal URL to browser-accessible URL
+        if "websocket_proxy" in proxy_url:
+            proxy_url = proxy_url.replace("websocket_proxy", "localhost")
+            
     return proxy_url
 
 def get_proxy_base_url():
-    """Get HTTP base URL for proxy API calls."""
-    proxy_url = get_proxy_url()
+    """Get HTTP base URL for proxy API calls (server-side)."""
+    # Use internal URL for server-side requests
+    proxy_url = get_proxy_url(for_client=False)
     return proxy_url.replace("ws://", "http://").replace("wss://", "https://").replace("/ws/realtime", "")
 
 def get_backend_url():
@@ -64,7 +74,8 @@ if "transcript" not in st.session_state:
 if "is_interview_active" not in st.session_state:
     st.session_state.is_interview_active = False
 if "candidate_id" not in st.session_state:
-    st.session_state.candidate_id = None
+    # Default to dummy candidate for testing
+    st.session_state.candidate_id = "df156a0e-7ff6-4e5b-ae34-43c4dc5791b2"
 if "session_token" not in st.session_state:
     st.session_state.session_token = None
 if "user_email" not in st.session_state:
@@ -132,15 +143,20 @@ with col_header2:
         st.session_state.is_interview_active = False
         st.rerun()
 
-# Candidate selection (for MVP, can be simplified)
-with st.expander("Candidate Information"):
-    candidate_email = st.text_input("Candidate Email", placeholder="candidate@example.com")
+# Candidate selection
+with st.expander("Candidate Information", expanded=True):
+    st.info(f"Current Candidate ID: `{st.session_state.candidate_id}`")
+    candidate_email = st.text_input("Override Candidate Email", placeholder="candidate@example.com")
+    
     if candidate_email:
-        # In a real app, you'd look up the candidate_id from the database
-        # For MVP, we'll generate a candidate ID if not set
-        if st.session_state.candidate_id is None:
-            st.session_state.candidate_id = str(uuid.uuid4())
-            st.info(f"Candidate ID: {st.session_state.candidate_id}")
+        if candidate_email == "test_candidate@example.com":
+            st.session_state.candidate_id = "df156a0e-7ff6-4e5b-ae34-43c4dc5791b2"
+            st.success(f"✅ Using Test Candidate ID")
+        else:
+            # Generate new random ID for other emails
+            new_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, candidate_email))
+            st.session_state.candidate_id = new_id
+            st.warning(f"⚠️ Generated ID for {candidate_email}: {new_id}. Ensure this exists in DB!")
 
 # Interview controls
 col1, col2 = st.columns(2)
@@ -170,6 +186,8 @@ with col1:
                     ])
                     
                     backend_url = get_backend_url()
+                    st.info(f"🔍 Debug: Attempting to save to {backend_url}/api/v1/voice-screener/session/{st.session_state.session_id}/save")
+                    
                     response = requests.post(
                         f"{backend_url}/api/v1/voice-screener/session/{st.session_state.session_id}/save",
                         json={
@@ -180,6 +198,8 @@ with col1:
                         },
                         timeout=30
                     )
+                    st.info(f"🔍 Debug: Response Status: {response.status_code}")
+                    
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.audio_file_path = data.get("audio_file_path")
@@ -187,12 +207,18 @@ with col1:
                         if st.session_state.audio_file_path:
                             st.info(f"Audio: {st.session_state.audio_file_path}")
                     else:
-                        st.warning(f"⚠️ Failed to save session: {response.text}")
+                        st.error(f"❌ Backend Error ({response.status_code}): {response.text}")
                 except Exception as e:
-                    st.warning(f"⚠️ Error saving session: {e}")
+                    st.error(f"❌ Connection Error: {e}")
+                    st.code(f"Backend URL: {get_backend_url()}\nError Type: {type(e).__name__}")
+            else:
+                st.error("❌ Missing session state for saving!")
+                st.write(f"Session ID: {st.session_state.session_id}")
+                st.write(f"Token: {bool(st.session_state.session_token)}")
+                st.write(f"Candidate ID: {st.session_state.candidate_id}")
             
             st.session_state.is_interview_active = False
-            st.rerun()
+            # st.rerun()  # Commented out to see debug messages
 
 with col2:
     if st.session_state.is_interview_active:
@@ -210,7 +236,7 @@ if st.session_state.is_interview_active:
             html_content = f.read()
         
         # Get proxy URL and session token
-        proxy_url = get_proxy_url()
+        proxy_url = get_proxy_url(for_client=True)
         session_token = st.session_state.session_token
         
         if not session_token:

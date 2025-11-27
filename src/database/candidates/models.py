@@ -12,12 +12,18 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 import uuid
+import secrets
+import string
 
 from src.state.candidate import CandidateStatus, InterviewStatus, DecisionStatus
 
 
 Base = declarative_base()
 
+
+def generate_auth_code() -> str:
+    """Generate a 6-digit random authentication code."""
+    return "".join(secrets.choice(string.digits) for _ in range(6))
 
 # --- TABLES ---
 
@@ -32,6 +38,7 @@ class Candidate(Base):
     parsed_cv_file_path = Column(String)
     status = Column(Enum(CandidateStatus), default=CandidateStatus.applied, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    auth_code = Column(String, default=generate_auth_code, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships

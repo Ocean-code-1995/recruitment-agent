@@ -138,6 +138,7 @@ async def verify(request: VerifyRequest):
         "created_at": time.time(),
         "user_audio_chunks": [],  # List of {timestamp, data: bytes}
         "agent_audio_chunks": [],  # List of {timestamp, data: bytes}
+        "transcript": [],  # List of {speaker, text, timestamp}
         "session_start_time": None  # Set when WebSocket connects
     }
     
@@ -327,6 +328,34 @@ async def websocket_proxy(websocket: WebSocket, token: Optional[str] = Query(Non
                                             except Exception as e:
                                                 logger.warning(f"[{client_id}] Failed to decode agent audio: {e}")
                                     
+                                    # Capture transcript
+                                    elif msg_type == "response.audio_transcript.done":
+                                        # Candidate transcript
+                                        text = msg_data.get("transcript", "")
+                                        if text:
+                                            sessions[token]["transcript"].append({
+                                                "speaker": "candidate",
+                                                "text": text,
+                                                "timestamp": time.time()
+                                            })
+                                            logger.info(f"[{client_id}] Captured candidate transcript: {text[:30]}...")
+                                            
+                                    elif msg_type == "response.text.done":
+                                        # Agent transcript (if using text modality)
+                                        text = msg_data.get("text", "")
+                                        if text:
+                                            sessions[token]["transcript"].append({
+                                                "speaker": "agent",
+                                                "text": text,
+                                                "timestamp": time.time()
+                                            })
+                                            logger.info(f"[{client_id}] Captured agent transcript: {text[:30]}...")
+                                            
+                                    # Also capture agent audio transcript if available (more accurate than text.done for audio)
+                                    elif msg_type == "response.audio_transcript.done":
+                                        # This event is for user input transcription usually, but check documentation
+                                        pass
+                                    
                                     await websocket.send_text(msg.data)
                                 except Exception as e:
                                     logger.error(f"[{client_id}] Error sending message to client: {e}")
@@ -428,13 +457,30 @@ async def retrieve_audio(request: RetrieveAudioRequest, token: Optional[str] = Q
     try:
         user_chunks = session.get("user_audio_chunks", [])
         agent_chunks = session.get("agent_audio_chunks", [])
+        transcript = session.get("transcript", [])
         session_start_time = session.get("session_start_time")
         
-        logger.info(f"Retrieved {len(user_chunks)} user chunks and {len(agent_chunks)} agent chunks for session {request.session_id}")
+        # Base64 encode chunks for JSON transport
+        encoded_user_chunks = []
+        for chunk in user_chunks:
+            encoded_chunk = chunk.copy()
+            if isinstance(chunk.get("data"), bytes):
+                encoded_chunk["data"] = base64.b64encode(chunk["data"]).decode("utf-8")
+            encoded_user_chunks.append(encoded_chunk)
+            
+        encoded_agent_chunks = []
+        for chunk in agent_chunks:
+            encoded_chunk = chunk.copy()
+            if isinstance(chunk.get("data"), bytes):
+                encoded_chunk["data"] = base64.b64encode(chunk["data"]).decode("utf-8")
+            encoded_agent_chunks.append(encoded_chunk)
+        
+        logger.info(f"Retrieved {len(user_chunks)} user chunks, {len(agent_chunks)} agent chunks, and {len(transcript)} transcript lines for session {request.session_id}")
         
         return {
-            "user_chunks": user_chunks,
-            "agent_chunks": agent_chunks,
+            "user_chunks": encoded_user_chunks,
+            "agent_chunks": encoded_agent_chunks,
+            "transcript": transcript,
             "session_start_time": session_start_time
         }
     except Exception as e:

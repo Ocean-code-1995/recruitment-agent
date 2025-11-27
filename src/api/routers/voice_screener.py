@@ -158,12 +158,39 @@ async def save_session(session_id: str, request: SaveSessionRequest):
             response.raise_for_status()
             audio_data = response.json()
             
+            import base64
+            
             user_chunks = audio_data.get("user_chunks", [])
+            # Decode Base64 audio data
+            for chunk in user_chunks:
+                if isinstance(chunk.get("data"), str):
+                    chunk["data"] = base64.b64decode(chunk["data"])
+                    
             agent_chunks = audio_data.get("agent_chunks", [])
+            # Decode Base64 audio data
+            for chunk in agent_chunks:
+                if isinstance(chunk.get("data"), str):
+                    chunk["data"] = base64.b64decode(chunk["data"])
+                    
             session_start_time = audio_data.get("session_start_time")
+            
+            # Get transcript from proxy if available
+            proxy_transcript = audio_data.get("transcript", [])
+            transcript_text = request.transcript_text
+            
+            if proxy_transcript:
+                logger.info(f"Using transcript from proxy ({len(proxy_transcript)} entries)")
+                transcript_text = "\n".join([
+                    f"{entry.get('speaker', 'unknown')}: {entry.get('text', '')}"
+                    for entry in proxy_transcript
+                ])
             
             if not session_start_time:
                 raise ValueError("Session start time not found in proxy response")
+                
+            logger.info(f"Audio Debug: Retrieved {len(user_chunks)} user chunks and {len(agent_chunks)} agent chunks")
+            if user_chunks:
+                logger.info(f"Audio Debug: First user chunk size: {len(user_chunks[0].get('data', b''))} bytes")
                 
         except Exception as e:
             logger.error(f"Error retrieving audio from proxy: {e}")
@@ -173,6 +200,7 @@ async def save_session(session_id: str, request: SaveSessionRequest):
         audio_file_path = None
         if user_chunks or agent_chunks:
             try:
+                logger.info("Audio Debug: Combining audio chunks...")
                 wav_data = combine_and_export_audio(
                     user_chunks=user_chunks,
                     agent_chunks=agent_chunks,
@@ -180,8 +208,10 @@ async def save_session(session_id: str, request: SaveSessionRequest):
                     session_id=session_id
                 )
                 
+                logger.info(f"Audio Debug: Generated WAV data size: {len(wav_data)} bytes")
+                
                 # Save WAV file
-                recordings_dir = Path("data/voice_recordings")
+                recordings_dir = Path("src/database/voice_recordings")
                 recordings_dir.mkdir(parents=True, exist_ok=True)
                 audio_file_path = str(recordings_dir / f"{session_id}.wav")
                 
@@ -189,15 +219,25 @@ async def save_session(session_id: str, request: SaveSessionRequest):
                     f.write(wav_data)
                 
                 logger.info(f"Saved audio file: {audio_file_path}")
+                
+                # Verify file exists and size
+                if os.path.exists(audio_file_path):
+                    size = os.path.getsize(audio_file_path)
+                    logger.info(f"Audio Debug: File verified on disk. Size: {size} bytes")
+                else:
+                    logger.error("Audio Debug: File NOT found on disk after writing!")
+                    
             except Exception as e:
                 logger.error(f"Error processing audio: {e}", exc_info=True)
                 # Continue even if audio fails - we still want to save the transcript
+        else:
+            logger.warning("Audio Debug: No audio chunks found to process!")
         
         # Save to database
         save_voice_screening_session(
             candidate_id=request.candidate_id,
             session_id=session_id,
-            transcript_text=request.transcript_text,
+            transcript_text=transcript_text,
             audio_url=audio_file_path
         )
         

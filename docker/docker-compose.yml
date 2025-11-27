@@ -140,7 +140,8 @@ services:
     environment:
       DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
       PYTHONPATH: /app
-      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime  # Internal Docker network URL
+      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime
+      BACKEND_API_URL: http://supervisor_api:8080
     volumes:
       # Mount local code for live updates
       - ../:/app
@@ -170,6 +171,7 @@ services:
       PYTHONPATH: /app
       PROMPTLAYER_API_KEY: ${PROMPTLAYER_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime
     volumes:
       # Mount local code for live updates
       - ../:/app

@@ -51,20 +51,9 @@ def combine_and_export_audio(
     BYTES_PER_SAMPLE = 2  # 16-bit = 2 bytes
     
     # Detect user audio sample rate (browser typically captures at 48kHz)
-    user_sample_rate = SAMPLE_RATE  # Default to 24kHz
-    if len(user_chunks) >= 2:
-        time_diff = user_chunks[1]["timestamp"] - user_chunks[0]["timestamp"]
-        samples_in_chunk = len(user_chunks[0]["data"]) // BYTES_PER_SAMPLE
-        if time_diff > 0:
-            detected_rate = samples_in_chunk / time_diff
-            # Round to nearest common sample rate
-            if detected_rate > 40000:
-                user_sample_rate = 48000
-            elif detected_rate > 20000:
-                user_sample_rate = 24000
-            else:
-                user_sample_rate = 16000
-            logger.info(f"Detected user audio sample rate: {detected_rate:.0f}Hz, using {user_sample_rate}Hz")
+    # NOTE: Frontend now resamples to 24kHz before sending, so we can trust it matches.
+    user_sample_rate = SAMPLE_RATE  # Always 24kHz
+    logger.info(f"Using standard sample rate: {user_sample_rate}Hz")
     
     # Process and prepare all chunks with their timestamps
     # We need to interleave user and agent chunks based on when they actually occurred
@@ -73,29 +62,7 @@ def combine_and_export_audio(
     # Process user chunks (resample if needed)
     for chunk in user_chunks:
         chunk_data = chunk["data"]
-        chunk_samples_original = len(chunk_data) // BYTES_PER_SAMPLE
-        
-        # Resample if needed
-        if user_sample_rate != SAMPLE_RATE:
-            resample_ratio = SAMPLE_RATE / user_sample_rate
-            chunk_samples_resampled = int(chunk_samples_original * resample_ratio)
-            
-            # Convert to samples, resample, convert back
-            samples = struct.unpack(f'<{chunk_samples_original}h', chunk_data)
-            resampled_samples = []
-            for j in range(chunk_samples_resampled):
-                src_idx = j / resample_ratio
-                idx_low = int(src_idx)
-                idx_high = min(idx_low + 1, chunk_samples_original - 1)
-                frac = src_idx - idx_low
-                if idx_low < chunk_samples_original:
-                    interpolated = samples[idx_low] * (1 - frac) + samples[idx_high] * frac
-                    resampled_samples.append(int(interpolated))
-            
-            chunk_data = struct.pack(f'<{chunk_samples_resampled}h', *resampled_samples)
-            chunk_samples = chunk_samples_resampled
-        else:
-            chunk_samples = chunk_samples_original
+        chunk_samples = len(chunk_data) // BYTES_PER_SAMPLE
         
         all_chunks.append({
             "timestamp": chunk["timestamp"],
