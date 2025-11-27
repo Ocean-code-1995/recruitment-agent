@@ -20,10 +20,18 @@ docker compose --env-file .env -f docker/docker-compose.yml up supervisor_api
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/chat` | Send message, get response |
-| POST | `/chat/stream` | SSE streaming response |
+| POST | `/chat` | Batch response with context compaction |
+| POST | `/chat/stream` | SSE streaming with context compaction ⚠️ |
+| POST | `/raw/chat` | Batch response, direct agent (no compaction) |
+| POST | `/raw/chat/stream` | SSE streaming, direct agent ⚠️ |
 | POST | `/new` | Create new chat session |
 | GET | `/health` | Health check |
+
+⚠️ **Note:** Streaming endpoints have known issues. Use batch endpoints (`/chat` or `/raw/chat`) for reliable operation.
+
+**With vs Raw endpoints:**
+- `/chat` and `/chat/stream` use `CompactingSupervisor` wrapper (auto context management)
+- `/raw/chat` and `/raw/chat/stream` bypass wrapper (direct agent access, useful for debugging)
 
 **Streaming (SSE) events:**
 ```
