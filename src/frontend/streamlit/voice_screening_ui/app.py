@@ -145,6 +145,12 @@ with col_header2:
 
 # Candidate selection
 with st.expander("Candidate Information", expanded=True):
+    # Check for candidate_id in query parameters
+    query_params = st.query_params
+    if "candidate_id" in query_params and not st.session_state.candidate_id:
+        st.session_state.candidate_id = query_params["candidate_id"]
+        st.success(f"✅ Candidate ID loaded from URL: {st.session_state.candidate_id}")
+    
     if st.session_state.candidate_id:
         st.info(f"Current Candidate ID: `{st.session_state.candidate_id}`")
     else:

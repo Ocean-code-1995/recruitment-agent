@@ -8,8 +8,9 @@
 | `candidates_db_init` | Python backend container — initializes DB schema | N/A | N/A |
 | `cv_upload_streamlit` | Streamlit app for CV uploads | 8501 | 8501 |
 | `websocket_proxy` | WebSocket proxy for OpenAI Realtime API | 8000 | 8000 |
-| `voice_screening_streamlit` | Streamlit app for voice screening | 8502 | 8501 |
+| `voice_screening_ui` | Streamlit app for voice screening | 8502 | 8501 |
 | `supervisor_ui` | Streamlit app for Supervisor Agent | 8503 | 8501 |
+| `supervisor_api` | FastAPI backend for Supervisor Agent | 8080 | 8080 |
 
 ---
 
