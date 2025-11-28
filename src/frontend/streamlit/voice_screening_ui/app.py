@@ -111,6 +111,11 @@ if not st.session_state.session_token:
                         data = response.json()
                         st.session_state.session_token = data["session_token"]
                         st.session_state.user_email = user_email
+                        
+                        # Auto-set candidate ID if returned
+                        if "candidate_id" in data and data["candidate_id"]:
+                            st.session_state.candidate_id = data["candidate_id"]
+                            
                         st.success("✅ Authentication successful!")
                         st.rerun()
                     else:
@@ -151,6 +156,10 @@ with st.expander("Candidate Information", expanded=True):
         st.warning("⚠️ No candidate selected. Please provide a Candidate ID.")
         
     candidate_id_input = st.text_input("Enter Candidate ID", value=st.session_state.candidate_id or "")
+    
+    # Strip whitespace from input
+    if candidate_id_input:
+        candidate_id_input = candidate_id_input.strip()
     
     if candidate_id_input and candidate_id_input != st.session_state.candidate_id:
         st.session_state.candidate_id = candidate_id_input

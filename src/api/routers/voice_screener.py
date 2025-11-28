@@ -234,13 +234,18 @@ async def save_session(session_id: str, request: SaveSessionRequest):
             logger.warning("Audio Debug: No audio chunks found to process!")
         
         # Save to database
-        save_voice_screening_session(
-            candidate_id=request.candidate_id,
-            session_id=session_id,
-            transcript_text=transcript_text,
-            audio_url=audio_file_path
-        )
-        
+        try:
+            save_voice_screening_session(
+                candidate_id=request.candidate_id,
+                session_id=session_id,
+                transcript_text=transcript_text,
+                audio_url=audio_file_path
+            )
+        except ValueError as e:
+            # Candidate not found
+            logger.warning(f"Failed to save session: {e}")
+            raise HTTPException(status_code=404, detail=str(e))
+            
         logger.info(f"Saved session {session_id} for candidate {request.candidate_id}")
         
         return SaveSessionResponse(
