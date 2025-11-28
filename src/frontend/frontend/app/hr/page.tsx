@@ -136,10 +136,15 @@ export default function HRPortal() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'applied': return '#f59e0b'
-      case 'screened': return '#3b82f6'
-      case 'voice_screening': return '#8b5cf6'
-      case 'scheduled': return '#10b981'
-      case 'rejected': return '#ef4444'
+      case 'cv_screened': return '#3b82f6'
+      case 'cv_passed': return '#10b981'
+      case 'cv_rejected': return '#ef4444'
+      case 'voice_invitation_sent': return '#8b5cf6'
+      case 'voice_done': return '#8b5cf6'
+      case 'voice_passed': return '#10b981'
+      case 'voice_rejected': return '#ef4444'
+      case 'interview_scheduled': return '#10b981'
+      case 'decision_made': return '#6366f1'
       default: return '#6b7280'
     }
   }
@@ -308,7 +313,6 @@ export default function HRPortal() {
                         {!candidate.hasVoiceScreening && (
                           candidate.status === 'cv_screened' || 
                           candidate.status === 'cv_passed' || 
-                          candidate.status === 'screened' ||
                           candidate.status === 'applied'
                         ) && (
                           <>
@@ -355,7 +359,7 @@ export default function HRPortal() {
                             </button>
                           </>
                         )}
-                        {candidate.status === 'voice_screening' && (
+                        {(candidate.status === 'voice_passed' || candidate.status === 'voice_done') && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
