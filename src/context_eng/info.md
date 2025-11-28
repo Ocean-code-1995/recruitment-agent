@@ -57,6 +57,27 @@ Instead of truncating, we **summarize** old conversation history into a compact 
 └──────────────────────────────────────────────────────────┘
 ```
 
+## 🔒 Subagents and Memory Safety
+
+Compaction affects **only the supervisor’s `messages` channel** inside LangGraph’s checkpoint.
+
+This includes:
+
+- User messages  
+- Supervisor AI messages  
+- **Tool call and Tool result messages** (because these are part of the supervisor’s visible conversation history)
+
+This does **not** include:
+
+- Sub-agent internal reasoning  
+- Sub-agent private memory  
+- Hidden chain-of-thought  
+- Any messages stored in sub-agent–specific channels
+
+Only the messages that the supervisor itself receives are ever compacted.  
+No internal sub-agent state leaks into the compacted summary.
+
+
 ## Key Parameters
 
 | Parameter | Default | Description |

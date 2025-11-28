@@ -1,457 +1,403 @@
-# ***`Gradio Agents & MCP Hackathon Winter Edition 2025`***
+# ***`Recruitment Agent`***
+<p align="left">
+  <img src="https://img.shields.io/badge/MCP%20Hackathon-Track%202%20%E2%80%94%20Enterprise-blue" />
+  <img src="https://img.shields.io/badge/Model%20Context%20Protocol-Enabled-green" />
+  <img src="https://img.shields.io/badge/AI%20Agents-Recruitment-orange" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue" />
+  <img src="https://img.shields.io/badge/LangGraph-Agent%20Orchestration-purple" />
+  <img src="https://img.shields.io/badge/Gradio-UI%20Interface-yellow" />
+  <img src="https://img.shields.io/badge/HuggingFace-Platform%20%26%20Hackathon-black?logo=huggingface" />
+  <img src="https://img.shields.io/badge/OpenAI-LLM%20Powered-0A0A23?logo=openai" />
+  <img src="https://img.shields.io/badge/Google%20Cloud-APIs%20%26%20MCP%20Tools-blue?logo=googlecloud" />
+</p>
 
-## 🏁 Overview
-This repository hosts our team's submission for **Track 2: MCP in Action** in the [MCP's 1st Birthday Hackathon](https://huggingface.co/MCP-1st-Birthday).
 
-Our goal is to build an **autonomous agentic system** that demonstrates:
-- **Planning, reasoning, and execution**
-- Integration of **custom tools, MCP tools, or external APIs**
-- Effective **context engineering**
-- Clear, practical **user value**
 
-We'll use **LangGraph** as our orchestration backbone for building multi-turn, tool-using, and context-aware agents.
 
-> ***`Check hackathon README for detilaed requirements.`***
 
-## 🧠 ***`Tools & Frameworks`***
 
-- 🧩 [LangGraph](https://docs.langchain.com/oss/python/langgraph/overview): for multi-agent orchestration and planning
-  - Why & how they built [LangGraph for production agents](https://blog.langchain.com/building-langgraph/)
-- 🧠 **LLM Engines:** [OpenAI](https://openai.com) / [Anthropic](https://www.anthropic.com) — reasoning and planning models
-  - gpt-oss inference providers
-    - [Open Router](https://openrouter.ai/openai/gpt-oss-20b):
-      - LangChain Wrapper: https://github.com/langchain-ai/langchain/discussions/27964
-    - [TogetherAI](https://www.together.ai/openai)
-- 💬 [Gradio](https://www.gradio.app/): for the UI and context-engineering demos
-- ⚙️ [MCP](https://modelcontextprotocol.io/docs/getting-started/intro) Tools: standardized interfaces for Gmail, Google Calendar, Voice technologies and other APIs
-- ☁️ [Google Cloud Platform](https://cloud.google.com): optional backend for hosting MCP servers and integrated services
-- 📞 [Twilio](https://www.twilio.com/en-us): enables automated voice calls and candidate interactions
-- 🔊 [ElevenLabs](https://elevenlabs.io): (optional) natural text-to-speech for realistic voice screenings
-- 🎙️ [Whisper-based Transcription API](https://whisperapi.com) (or [OpenAI Whisper API](https://platform.openai.com/docs/guides/speech-to-text) ) — for speech-to-text functionality in voice interviews
-- 🧭 [Langfuse](https://langfuse.com) or [LangSmith](https://docs.langchain.com/langsmith/quick-start-studio): debugging, observability, and trace visualization
-- 📄 [Docling](https://www.docling.ai): for parsing and analyzing uploaded CV documents
-- 🧱 [Pydantic](https://docs.pydantic.dev/latest/): for structured outputs and data validation
-- 🔀 [Parlant](https://github.com/emcie-co/parlant): enables agents to handle multi-intent, free-form conversations by dynamically activating relevant guidelines instead of rigidly routing to a single sub-agent — solving the context fragmentation problem inherent in traditional LangGraph supervisor patterns.
+> This project was developed as part of the **[MCP 1st Birthday Hackathon](https://huggingface.co/MCP-1st-Birthday)** — submitted under  
+> **Track 2: MCP in Action (Enterprise)**, showcasing a real-world multi-agent application built on top of the Model Context Protocol.
 
-## 📚 ***`References for Context Engineering`***
 
-- [**Context Engineering for AI Agents — Manus Blog**](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus)
-- [**YouTube Talk Manus**](https://www.youtube.com/watch?v=6_BcCthVvb8&start=2525)
-- [**LangGraph Overview**](https://docs.langchain.com/oss/python/langgraph/overview)
-- https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
-- https://medium.com/fundamentals-of-artificial-intelligence/mitigate-context-poisoning-in-ai-agents-using-context-engineering-96cf40dbb38d
-- https://blog.langchain.com/context-engineering-for-agents/
-- **langgraph implementations**
-  - [video]((https://www.youtube.com/watch?v=nyKvyRrpbyY))
-  - [good notebooks](https://github.com/langchain-ai/how_to_fix_your_context/blob/main/notebooks/utils.py)
-- [Langgraph summary of what frontier labs and firms apply](https://www.youtube.com/watch?v=XFCkrYHHfpQ)
+<details>
+<summary><strong>📚 Table of Contents</strong> (click to expand)</summary>
 
-These resources guide our approach to **memory management, planning transparency, and tool orchestration** in autonomous agents.
+- [Problem Statement](#problem-statement)
+- [Ethical & Regulatory Considerations](#ethical--regulatory-considerations)
+- [Quick Start: Run Application](#quick-start-run-application)
+  - [Services & Ports](#services--ports)
+  - [Infrastructure & Secrets](#infrastructure--secrets)
+  - [Run Command](#run-command)
+  - [Resetting the Environment](#resetting-the-environment)
+- [Application Flow & Entry Points](#application-flow--entry-points)
+  - [The Recruitment Lifecycle](#1-the-recruitment-lifecycle)
+  - [User Entry Points](#2-user-entry-points)
+- [AI Engineering Principles](#ai-engineering-principles)
+  - [Prompt Engineering](#prompt-engineering)
+  - [Context Engineering](#context-engineering)
+- [Model & Agent Registry](#model--agent-registry)
+  - [Integrated MCP Servers](#integrated-mcp-servers)
+- [License & Acknowledgments](#license--acknowledgments)
+- [Team](#team)
 
-## 🧾  ***`HR Candidate Screening Multi-Agent System`***
-An autonomous HR assistant that streamlines early recruitment through five steps:
-1. **CV Upload (Application)** — candidate applications uploaded and parsed
-2. **CV Screening** — rank and shortlist candidates using LLM reasoning
-3. **Voice Screening** — invite and coordinate interviews using a voice agent.
-4. **Person-to-Person Screening** — schedule HR interviews via Google Calendar integration
-5. **Decision** — generate a concise summary and notify HR
+</details>
 
-> **`NOTE`**
-> - Final decision of whether candidate will be hired is made by human.
-> - Just automate the boring, tedious stuff while keeping human final decision in the loop.
 
-**Architecture:**
-1. **Main Planner Agent**: orchestrates the workflow
-2. **Subagents**:
-  - CV Screening Agent
-  - Voice Screening Agent
-  - Meeting Scheduler Agent
-3. **Tools (via MCP)** connect to Gmail, Calendar, and Voice APIs.
-4. **Database** stores both candidate info and persistent agent memory.
-5. **Gradio UI** visualizes workflow, reasoning, and results.
-```mermaid
-flowchart TD
-    subgraph MainAgent["🧠 Main Planner Agent"]
-        A1["Plans • Reasons • Executes"]
-    end
 
-    subgraph Subagents["🤖 Subagents"]
-        S1["📄 CV Screening"]
-        S2["🎙️ Voice Screening"]
-        S3["📅 Scheduling"]
-        S4["🧾 Decision Summary"]
-    end
 
-    subgraph Tools["⚙️ MCP & External Tools"]
-        T1["📧 Gmail"]
-        T2["🗓️ Google Calendar"]
-        T3["🗣️ Voice API"]
-    end
+## **Problem Statement**
 
-    subgraph Data["🗄️ Database"]
-        D1["Candidate Data"]
-        D2["Context Memory (Cognitive Offloading)"]
-    end
+Modern recruitment processes remain **slow**, **resource-intensive**, and increasingly **unsustainable** for HR teams amid persistent talent shortages and evolving skill demands. Recent industry reports underscore structural bottlenecks that hinder efficient hiring.
 
-    subgraph UI["💬 Gradio Dashboard"]
-        U1["HR View & Interaction"]
-    end
+High **applicant volumes overwhelm recruiters**, with a *typical job posting attracting hundreds of applications*, many *unqualified*, leading to administrative burdens and rushed evaluations. This results in *only about **5%** of viewers completing applications*, while teams waste time sifting through low-quality submissions. [`1`]
 
-    %% Connections
-    MainAgent --> Subagents
-    Subagents --> Tools
-    Subagents --> Data
-    MainAgent --> Data
-    MainAgent --> UI
-```
+Screening and early-stage evaluation consume excessive recruiter time, with **35%** of their efforts dedicated to tasks like interview scheduling alone, exacerbating workload pressures. Talent acquisition leaders report unmanageable demands, with **27%** citing overload as a key issue, up from prior years. [`2`]
 
-**GCP Setup for Judges:**
-A single demo Gmail/Calendar account (`scionhire.demo@gmail.com`) is pre-authorized via OAuth, with stored credentials in `.env`.
-Judges can run or view the live demo without any credential setup, experiencing real Gmail + Calendar automation safely.
+**Hiring timelines average 44 days across industries**, driven by skills mismatches and manual processes that delay filling critical roles. Globally, **76%** of employers struggle to fill positions due to talent gaps, particularly in tech and healthcare sectors. [`1`, `3`]
 
-We use **hierarchical planning**:
-- **Main Agent:** decides next step in the workflow (plan, adapt, replan)
-- **Subagents:** specialized executors (screening, scheduling, summarization)
-- **Memory State:** tracks plan progress and tool results  
-- **Dashboard Visualization:** shows active plan steps and reasoning traces for transparency
+The financial toll is significant, with **average cost-per-hire reaching $4,700**, fueled by prolonged cycles, high turnover in recruitment teams (projected at **51%** as a top 2025 challenge), and inefficiencies in sourcing. [`1`, `2`]
 
-🧠 Why This Is an Agent (Not Just a Workflow)
+HR professionals **face rising burnout** from these pressures, compounded by competition for diverse talent and the **need for more touchpoints in hiring**, which **45%** of leaders say adds complexity. Skills shortages, cited by **63%** of employers as the primary barrier to growth, further strain teams. [`2`, `4`]
 
-| Criterion | Workflow | Our System |
-|------------|-----------|-------------|
-| **Autonomy** | Executes fixed sequence of steps | Main agent decides next actions without manual triggers |
-| **Planning** | Predefined order (A → B → C) | Main agent generates and adapts a plan (e.g., skip, retry, re-order) |
-| **Reasoning** | No decision logic | Uses LLM reasoning to evaluate outputs and choose next subagent |
-| **Context Awareness** | Stateless | Maintains shared memory of candidates, progress, and outcomes |
-| **Adaptation** | Fails or stops on error | Re-plans (e.g., if calendar slots full or candidate unresponsive) |
+These challenges reveal that **traditional manual recruitment fails to scale** in a competitive 2025 landscape. An AI-driven recruitment agent can alleviate bottlenecks by automating screening, accelerating timelines, enhancing consistency, and allowing HR to prioritize strategic decisions over repetitive tasks.
 
-✅ **Therefore:** it qualifies as an *agentic system* because it **plans, reasons, and executes** autonomously rather than following a static workflow.
 
-## ***`Project Structure`***
-```
-agentic-hr/
-│
-├── 📁 src/
-│ │
-│ ├── 📁 core/
-│ │ │ ├── base_agent.py           # Abstract BaseAgent (LangGraph-compatible)
-│ │ │ ├── supervisor.py           # Supervisor agent (LangGraph graph assembly)
-│ │ │ ├── state.py                # Shared AgentState + context window
-│ │ │ ├── planner.py              # High-level planning logic
-│ │ │ └── executor.py             # Graph executor / runner
-│ │
-│ ├── 📁 agents/
-│ │ │
-│ │ ├── 📁 cv_screening/
-│ │ │ │ ├── agent.py              # CVScreeningAgent implementation
-│ │ │ │ ├── 📁 tools/
-│ │ │ │ │ ├── doc_parser.py
-│ │ │ │ │ ├── normalize_skills.py
-│ │ │ │ │ ├── rank_candidates.py
-│ │ │ │ │ └── match_to_jd.py
-│ │ │ │ └── 📁 schemas/
-│ │ │ │     ├── cv_schema.py      # Parsed CV Pydantic schema
-│ │ │ │     └── jd_schema.py      # Job description schema
-│ │ │
-│ │ ├── 📁 voice_screening/
-│ │ │ │ ├── agent.py              # VoiceScreeningAgent
-│ │ │ │ ├── 📁 tools/
-│ │ │ │ │ ├── twilio_client.py
-│ │ │ │ │ ├── whisper_transcribe.py
-│ │ │ │ │ └── tts_service.py
-│ │ │ │ └── 📁 schemas/
-│ │ │ │     ├── call_result.py
-│ │ │ │     └── transcript.py
-│ │ │
-│ │ ├── 📁 scheduler/
-│ │ │ │ ├── agent.py              # SchedulerAgent
-│ │ │ │ ├── 📁 tools/
-│ │ │ │ │ ├── calendar_tool.py
-│ │ │ │ │ ├── gmail_tool.py
-│ │ │ │ │ └── slot_optimizer.py
-│ │ │ │ └── 📁 schemas/
-│ │ │ │     └── meeting_schema.py
-│ │ │
-│ │ └── 📁 decision/
-│ │     ├── agent.py              # DecisionAgent (final summarizer/Reporter)
-│ │     └── 📁 schemas/
-│ │         └── decision_report.py
-│ │
-│ ├── 📁 mcp_server/
-│ │   ├── main.py
-│ │   ├── 📁 endpoints/
-│ │   ├── auth.py
-│ │   └── schemas.py
-│ │
-│ ├── 📁 gradio/
-│ │   ├── app.py                  # Main Gradio app (Hugging Face Space entry)
-│ │   ├── dashboard.py            # Live agent graph & logs view
-│ │   ├── candidate_portal.py     # Candidate upload / screening status
-│ │   ├── hr_portal.py            # HR review + interview approval
-│ │   ├── components.py           # Shared Gradio components
-│ │   └── 📁 assets/              # Logos, CSS, etc.
-│ │
-│ ├── 📁 cv_ui/
-│ │   ├── app.py 
-│ │
-│ ├── 📁 voice_screening_ui/
-│ │   ├── app.py 
-│ │
-│ │
-│ ├── 📁 prompts/
-│ │   ├── prompt_manager.py       # Centralized prompt versioning
-│ │   ├── cv_prompts.py
-│ │   ├── voice_prompts.py
-│ │   └── scheduler_prompts.py
-│ │
-│ ├── 📁 database/
-│ │   ├── models.py               # SQLAlchemy models
-│ │   ├── db_client.py            # Connection & CRUD
-│ │   └── context_sync.py         # Cognitive offloading (context ⇄ DB)
-│ │
-│ ├── main.py                     # CLI runner / local orchestrator entry
-│ └── config.py                   # Environment configuration
-│
-├── 📁 tests/
-│ │ ├── test_cv_agent.py
-│ │ ├── test_voice_agent.py
-│ │ ├── test_scheduler_agent.py
-│ │ ├── test_mcp_server.py
-│ │ └── test_integration.py
-│
-├── .env.example
-├── requirements.txt
-├── Dockerfile
-├── app.py                         # Shortcut to src/ui/app.py
-├── README.md
-└── LICENSE
-```
 
-## ***`Multi Agent System Architecture`***
-Below you will find an overview of the subagent components that mnake upo the entire system. More detailed information and brainstorming is decicated to the `docs/agents/..` directory.
+### *`References`*
 
-### 1) ***`Orchestrator`***
-#### Overview
+1. [HR Cloud — 25 Recruitment Challenges & Solutions in 2025](https://www.hrcloud.com/blog/recruitment-challenges)
 
-The orchestrator agent is reponsible for **supervising** and **triggering** the ***tasks of the subagents***.
+2. [Select Software Reviews — 100+ Recruitment Statistics Every HR Should Know in 2025](https://www.selectsoftwarereviews.com/blog/recruiting-statistics)
 
-> For more planning and info, go to `docs/agents/agent_orchestrator.md`
+3. [Social Talent — The 2025 Hiring Reality Check](https://www.socialtalent.com/leadership/the-2025-hiring-reality-check-data-driven-answers-to-ta-leaders-top-questions)
 
-### 2) ***`CV Screener`***
-#### Overview
-The cv screening agent deals with scanning the applicant's CV's, and deciding who are fruitful versus unpromising candidates as a first filtering step.
+4. [World Economic Forum — The Future of Jobs Report 2025](https://www.weforum.org/publications/the-future-of-jobs-report-2025/digest/)
 
-> For more planning and info, go to `docs/agents/cv_screening.md`
+## **Ethical & Regulatory Considerations**
 
-### 3) 🎙️ ***`Voice Screening Agent`***
+This project was developed as an **experimental prototype for a hackathon**, designed to showcase how language-model agents can automate structured workflows. It is **not intended for production deployment** as an autonomous hiring system. Because it touches on the automated assessment of humans, it must be approached with caution and interpreted within the correct ethical and regulatory context.
 
-#### Overview
-The **Voice Screening Agent** conducts automated phone interviews and integrates with the **LangGraph HR Orchestrator**.  
-It uses **Twilio** for phone calls, **Whisper/ASR** for speech-to-text, **ElevenLabs** for natural voice output, and **LangGraph** for dialogue logic.
+The risks of algorithmic profiling have been widely documented, most notably during the **Cambridge Analytica scandal**, where data from millions of users was harvested and used for psychographic targeting without consent. This episode demonstrated how data-driven models can be leveraged to manipulate individuals when used irresponsibly, and it significantly shaped today’s regulatory landscape. [`5`]
 
-> For more planning and info, go to `docs/agents/voice_screening.md`
+Given this history, any system that evaluates or ranks people—particularly in employment—must uphold **strict transparency, human oversight, and narrow scope**. In this prototype, all AI outputs are intended purely as **assistive signals**. The system must **never** be used to autonomously approve, reject, or shortlist candidates.
 
-### 4) ***`Google MCP Agents`***
-#### Overview
-The google mcp agents will be resposnible to:
-a) writing emails
-b) scheduling and menaging google calendar events
+The **EU AI Act** classifies AI systems used for recruitment, CV screening, candidate ranking, promotion decisions, or termination as **High-Risk AI Systems** (Annex III). Such systems are permitted in the EU but must meet stringent requirements, including:
 
-It adviseable to break this up into two subagents, to get rid of `context poisoning`.
+- **Human oversight** with the ability to override AI suggestions  
+- **Transparency** about the model’s role and limitations  
+- **Detailed logging and traceability** of system behavior  
+- **Bias monitoring and risk management**  
+- **High-quality and relevant training data**  
+- **Clear separation** between AI scoring and final human judgment
 
-> For more planning and info, go to `docs/agents/google_mcp_agent.md`
+The Act also **prohibits** certain practices in hiring, such as emotion recognition in workplace settings, biometric inference of personality traits, and social-scoring-style ranking systems. [`6`, `7`, `8`]
 
-### 4) ***`LLM as a Judge`***
-#### Overview
-LLM-as-a-judge will be leveraged to judge call screening results.
+This prototype **does not** conduct emotion recognition, sensitive-trait inference, biometric profiling, or psychographic prediction. It is a technical experiment focused on agent orchestration, workflow automation, and context management—not an end-to-end HR decision engine.
 
-> For more planning and info, go to `docs/agents/judging_agent.md`
+### **Human-in-the-Loop by Design**
+To remain aligned with ethical expectations and regulatory requirements, this system must always operate with:
 
-## 🗄️ ***`Data Layer`***
+- **Human-in-the-Loop (HITL):** Recruiters make all decisions.  
+- **Explainability:** Agents produce structured rationales, not black-box judgments.  
+- **Data minimization:** Only job-relevant information is processed.  
+- **No profiling of protected traits:** No biometric, psychographic, or emotional inference.
 
-The system uses a unified **SQLAlchemy-based database** for both **candidate data management** and **context engineering**.
-
-### 📦 Purpose
-| Data Type | Description |
-|------------|--------------|
-| 🧾 **Candidates** | Stores CVs, parsed data, and screening results |
-| 🎙️ **Voice Results** | Saves transcripts, evaluations, and tone analysis |
-| 🗓️ **Scheduling** | Tracks HR availability and confirmed interviews |
-| 🧠 **Agent Context Memory** | Enables **cognitive offloading** — storing reasoning traces and summaries so the active context stays uncluttered and information can be recalled when needed |
-| 📚 **Logs / Tool History** | Archives tool interactions and results for transparency and reuse |
-
-We use [**SQLAlchemy**](https://www.sqlalchemy.org) as the ORM layer to manage both structured candidate data and **persistent agent memory**, allowing the system to offload, summarize, and retrieve context efficiently across sessions.
-
-## 🗃️ ***`Prompt Archive`***
-
-To ensure consistent behavior and easy experimentation across subagents, the system includes a **centralized prompt management layer**.
-
-### 📦 Purpose
-| Component | Description |
-|------------|--------------|
-| 🧠 **Prompt Templates** | Stores standardized prompts for each subagent (CV screening, voice screening, scheduling) |
-| 🔄 **Prompt Versioning** | Allows tracking and updating of prompt iterations without changing agent code |
-| 🧩 **Dynamic Injection** | Enables context-dependent prompt construction using retrieved memory or database summaries |
-| 📚 **Archive** | Keeps older prompt variants for reproducibility and ablation testing |
-
-## 📺 ***`Gradio Interface`***
-
-We use **Gradio** to demonstrate our agent's reasoning, planning, and tool use interactively — fully aligned with the **Agents & MCP Hackathon** focus on **context engineering** and **user value**.
-
-### 🧩 Key Features
-| Section | Purpose |
-|----------|----------|
-| 🧍 **Candidate Portal** | Upload CVs, submit applications, and view screening results |
-| 🧑‍💼 **HR Portal** | Review shortlisted candidates, trigger voice screenings, and schedule interviews |
-| 🧠 **Agent Dashboard** | Visualizes the current plan, tool calls, and reasoning traces in real time |
-| ⚙️ **Tool Integration** | Shows live MCP actions (Gmail send, Calendar scheduling) with status updates |
-| 📊 **Context View** | Displays agent memory, current workflow stage, and adaptive plan updates |
-
-#### Context Engineering Visualization?
-This is what judges really care about — it must show that the system is agentic (reasoning, memory, planning).
-🧠 Agent Plan Viewer
-gr.JSON() or custom visual showing the current plan state, e.g.:
-```json
-{
-  "plan": [
-    "1. Screen CVs ✅",
-    "2. Invite for voice screening 🔄",
-    "3. Schedule HR interview ⬜",
-    "4. Await HR decision ⬜"
-  ]
-}
-```
-🗺️ Live Plan Progress
-- Use a progress bar or color-coded status list of steps.
-- Judges must see autonomous transitions (from one step to another).
-
-💬 Reasoning Log / Memory
-- Stream or text box showing LLM thought traces or context summary:
-  - “Detected strong match for Data Scientist role.”
-  - “Candidate completed voice interview; confidence: 8.4/10.”
-  - “Next step: scheduling HR interview.”
-
-⚙️ Tool Call Trace
-- Small table showing:
-
-| Time  | Tool     | Action           | Result    |
-| ----- | -------- | ---------------- | --------- |
-| 12:05 | Gmail    | `send_invite()`  | Sent      |
-| 12:06 | Calendar | `create_event()` | Confirmed |
-
-## 🔗 ***`MCP Integration (Best Practice Setup)`***
-
-To align fully with the **Agents & MCP Hackathon** standards, our system will use or extend a **standardized MCP server** for integrations such as **Gmail** and **Google Calendar** — and potentially **Scion Voice** in later stages.
-
-**`Inspired by`** [Huggingface MCP Course](https://huggingface.co/learn/mcp-course/en/unit2/introduction): shows how to build an MCP app.
-
-### 🧩 Why MCP?
-| Benefit | Description |
-|----------|--------------|
-| ✅ **Standardized** | Exposes Gmail & Calendar as reusable MCP tools with a consistent schema |
-| 🔐 **Secure** | OAuth handled once server-side — no tokens or secrets stored in the agent |
-| 🧱 **Modular** | Clean separation between the agent's reasoning logic and the integration layer |
-| 🔄 **Reusable** | Same MCP server can serve multiple projects or agents |
-| 🚀 **Hackathon-Ready** | Directly fulfills the “use MCP tools or external APIs” requirement |
+### **Project Status**
+This project remains a **research and demonstration artifact**, created to explore the technical viability of LLM-powered coordination between agents. It highlights what is technologically possible, but is **not a deployable HR solution** under the EU AI Act. Any real-world implementation would require extensive risk assessment, compliance measures, and human oversight to avoid replicating the harms demonstrated in past profiling scandals.
 
 ---
 
-### ⚙️ Why Use MCP Instead of Just Defining Tools
-| Approach | Limitation / Risk | MCP Advantage |
-|-----------|-------------------|----------------|
-| **Custom-defined tools** (e.g., direct Gmail API calls in code) | Each project must re-implement auth, rate limits, and API logic | MCP provides a *shared, pre-authorized* interface any agent can use |
-| **Embedded credentials** in `.env` | Security risk, harder for judges to test | Credentials handled server-side — no secrets in the repo |
-| **Tight coupling** between agent and tool | Hard to swap or extend integrations | MCP creates a plug-and-play API boundary between reasoning and execution |
-| **Limited reuse** | Tools only exist in one codebase | MCP servers can expose many tools to multiple agents dynamically |
+### *`References`*
 
-MCP turns these one-off integrations into **standardized, composable building blocks** that work across agents, organizations, or platforms — the same philosophy used by **Anthropic**, **LangChain**, and **Hugging Face** in 2025 agent ecosystems.
+5. [The Guardian — Cambridge Analytica: A Year On, Lesson in Institutional Failure](https://www.theguardian.com/uk-news/2019/mar/17/cambridge-analytica-year-on-lesson-in-institutional-failure-christopher-wylie)
+
+6. [High-level summary of the EU AI Act](https://artificialintelligenceact.eu/high-level-summary/)
+
+7. [EU Digital Strategy — Regulatory Framework for AI](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai)
+
+8. [Clifford Chance — What Does the EU AI Act Mean for Employers?](https://www.cliffordchance.com/content/dam/cliffordchance/briefings/2024/08/what-does-the-eu-ai-act-mean-for-employers.pdf)
 
 
-We will build or extend the open-source [**mcp-gsuite**](https://github.com/MarkusPfundstein/mcp-gsuite) server and host it securely on **Google Cloud Run**.  
-This server manages authentication, token refresh, and rate limiting — while exposing standardized MCP actions like:
-```json
-{
-  "action": "gmail.send",
-  "parameters": { "to": "candidate@example.com", "subject": "Interview Invite", "body": "..." }
-}
+
+## ***`Quick Start: Run Application`***
+To spin up the entire platform including the database, agents, and UI dashboards, we use **Docker Compose**.
+
+### ***Services & Ports***
+| Service | Description | Host Port | Container Port |
+|---------|-------------|-----------|----------------|
+| `db` | PostgreSQL 15 database with persistent storage | **5433** | 5432 |
+| `cv_upload_streamlit` | UI for uploading CVs | **8501** | 8501 |
+| `voice_screening_streamlit` | UI for voice screening candidates | **8502** | 8501 |
+| `supervisor_ui` | Main Chat UI for the Supervisor Agent | **8503** | 8501 |
+| `websocket_proxy` | Proxy for OpenAI Realtime API | **8000** | 8000 |
+
+### ***Infrastructure & Secrets***
+This project requires Google Cloud credentials for the Gmail and Calendar agents.
+
+- **Secrets:** Google tokens and credentials must be present in the `secrets/` directory.
+- **Infrastructure:** You can provision the necessary GCP infrastructure using the code in `terraform/` or the scripts in `scripts/infra/`.
+- **Documentation:** For detailed setup instructions, refer to the [MCP Docs](docs/mcp/).
+
+### ***Run Command***
+1. **Configure Environment:**
+   Copy the example environment file and fill in your API keys:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Start Services:**
+   ```bash
+   docker compose --env-file .env -f docker/docker-compose.yml up --build
+   ```
+
+### 🧹 Resetting the Environment
+If you need a clean slate (e.g., after modifying DB models):
+```bash
+# 1. Stop containers
+docker compose -f docker/docker-compose.yml down
+
+# 2. Remove persistent DB volume
+docker volume rm docker_postgres_data
+
+# 3. Rebuild & Start
+docker compose --env-file .env -f docker/docker-compose.yml up --build
 ```
 
-and
+---
 
-```json
-{
-  "action": "calendar.create_event",
-  "parameters": { "summary": "HR Interview", "start": "...", "end": "..." }
-}
+## ***`Application Flow & Entry Points`***
+
+The platform orchestrates a complete recruitment pipeline, interacting with both Candidates and the HR Supervisor.
+
+### 1. The Recruitment Lifecycle
+The system tracks candidates through a defined state machine (see `src/state/candidate.py` for the `CandidateStatus` enum).
+
+```mermaid
+graph TD
+    %% Actors
+    Candidate((Candidate))
+    HR((HR Supervisor))
+
+    %% System Components (Nodes)
+    CV_UI[CV Portal UI]
+    CV_Screen{CV Screening AI}
+    Voice_UI[Voice Portal UI]
+    Voice_Judge{Voice Judge AI}
+    Interview[Person-to-Person Interview]
+    Decision{Final Decision}
+
+    %% Flow & Actions (Edges)
+    Candidate -->|1. Uploads CV| CV_UI
+    CV_UI -->|2. Triggers Analysis| CV_Screen
+    
+    CV_Screen -->|Pass: Sends Invite| Voice_UI
+    CV_Screen -->|Fail: Notify| Rejected((Rejected))
+
+    Voice_UI -->|3. Conducts Interview| Candidate
+    Candidate -->|4. Completes Session| Voice_Judge
+    
+    Voice_Judge -->|Pass: Schedule| Interview
+    Voice_Judge -->|Fail: Notify| Rejected
+
+    Interview -->|5. Feedback| HR
+    HR -->|6. Updates Status| Decision
+    
+    Decision -->|Hire| Hired((Hired))
+    Decision -->|Reject| Rejected
+
+    %% Styling
+    style CV_UI fill:#e3f2fd,stroke:#1565c0
+    style Voice_UI fill:#e3f2fd,stroke:#1565c0
+    style CV_Screen fill:#fff3e0,stroke:#ef6c00
+    style Voice_Judge fill:#fff3e0,stroke:#ef6c00
+    style Interview fill:#e8f5e9,stroke:#2e7d32
+    style Decision fill:#f3e5f5,stroke:#7b1fa2
 ```
-This architecture lets our HR agent (and future projects) perform real email and scheduling actions via secure MCP endpoints — giving judges a safe, live demo of true agentic behavior with no local credential setup required.
 
-## 🧠 ***`Agent Supervisor — Why Parlant + LangGraph`***
+### 2. User Entry Points
 
-LangGraph provides a powerful orchestration backbone for planning, reasoning, and executing multi-agent workflows.  
-However, its common **supervisor pattern** has a key limitation: the supervisor routes each user query to **only one sub-agent** at a time.
+| User | Interface | Port | Description |
+| :--- | :--- | :--- | :--- |
+| **HR Manager** | **Supervisor UI** | `8503` | **The Command Center.** Chat with the Supervisor Agent to manage the pipeline, review candidates, query the DB, and schedule interviews. |
+| **Candidate** | **CV Portal** | `8501` | Public-facing portal for candidates to register and upload their resumes to the system. |
+| **Candidate** | **Voice Portal** | `8502` | AI-conducted voice interview interface. Candidates access this only after passing CV screening and receiving an invite. |
 
-### ⚠️ Example Problem
-> “I uploaded my CV yesterday. Can I also reschedule my interview — and how long is the voice call?”
+---
 
-A standard LangGraph supervisor would forward this entire message to, say, the **CV Screening Agent**,  
-missing the **scheduling** and **voice screening** parts — causing incomplete or fragmented responses.
+## ***`AI Engineering Principles`***
 
-### 💡 Parlant as the Fix
-**[Parlant](https://github.com/emcie-co/parlant)** solves this by replacing single-route logic with **dynamic guideline activation**.  
-Instead of rigid routing, it loads multiple relevant *guidelines* into context simultaneously, allowing coherent handling of mixed intents.
+### ***Prompt Engineering***
 
-```python
-agent.create_guideline(
-  condition="User asks about rescheduling",
-  action="Call SchedulerAgent via LangGraph tool"
-)
+To improve the reliability of complex evaluations (such as CV scoring and Voice Interview judging), we enforce **Chain-of-Thought (CoT)** reasoning within our structured outputs, inspired by [Wei et al. (2022)](https://arxiv.org/abs/2201.11903).
 
-agent.create_guideline(
-  condition="User asks about voice screening duration",
-  action="Query VoiceScreeningAgent"
-)
+By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/agents/cv_screening/schemas/output_schema.py`), where field order matters:
+
+```mermaid
+flowchart LR
+    %% Nodes
+    Input[Input Data]
+    subgraph "Structured Output Schema"
+        Feedback["1. Generate Feedback (CoT)"]
+        Score["2. Assign Scores"]
+    end
+    Output[Overall Score]
+
+    %% Flow
+    Input --> Feedback
+    Feedback --> Score
+    Score --> Output
+
+    %% Styling
+    style Feedback fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style Score fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
 ```
 
-If a user blends both topics, ***both guidelines trigger***, producing a unified, context-aware response.
+This simple structural constraint leads to significantly better calibration and reduced hallucination in scoring.
 
-### ⚙️ Why Combine Them
-| Layer                         | Framework     | Role                                                                    |
-| ----------------------------- | ------------- | ----------------------------------------------------------------------- |
-| 🧠 **Workflow Orchestration** | **LangGraph** | Executes structured agent workflows (CV → Voice → Schedule → Decision). |
-| 💬 **Conversational Layer**   | **Parlant**   | Dynamically manages mixed intents using guideline-based reasoning.      |
-| 🔧 **Integration Layer**      | **MCP Tools** | Provides standardized access to Gmail, Calendar, and Voice APIs.        |
+### ***Context Engineering***
+
+To ensure long-running reliability and precision, this system employs a multi-layered approach to context management. This architecture prevents **"Context Rot"**—a phenomenon where LLM performance degrades as input length increases, as highlighted in [Chroma's research](https://research.trychroma.com/context-rot). By managing context effectively, we ensure agents remain focused and accurate over extended interactions.
 
 
-Together, ***Parlant + LangGraph*** merge structured planning with conversational adaptability —
-enabling our HR agent to reason, plan, and respond naturally to complex, multi-topic interactions.
+#### 1. Context Isolation via Delegation
+Instead of a single monolithic agent, tasks are delegated to **specialized sub-agents** (e.g., `cv_screener`, `voice_screener`).
 
-## ✨ ***`Agentic Enhancements [BONUS]`***
+- **Delegate (Solid Arrow):** The Supervisor initiates a task, passing only the necessary context to a specific sub-agent.
+- **Report Back (Dotted Arrow):** Once the sub-agent completes its task, it returns a structured summary to the Supervisor, ensuring the main context remains clean.
 
-To make the system more **autonomous, interpretable, and resilient**, we integrated a few lightweight yet powerful improvements:
+```mermaid
+graph TD
+    %% Legend (Top)
+    subgraph Legend [Legend]
+        direction LR
+        KeySup[Supervisor] -->|Delegation| KeyAgent[Sub-Agent]
+        KeyAgent -.->|Report Back| KeySup
+    end
 
-- 🧠 **Self-Reflection** – before executing a step, the agent briefly states *why* it's taking that action, improving reasoning transparency.  
-- 🔄 **Adaptive Re-Planning** – if a subagent or tool call fails (e.g., no calendar slot, missing response, or API timeout), the main planner automatically updates its plan — skipping, retrying, or re-ordering steps instead of stopping.  
-- 🧮 **LLM Self-Evaluation** – after each stage (CV, voice, scheduling), a lightweight judge model rates the result and adds feedback for the next step.  
-- 🗂️ **Context Summary** – the dashboard displays a live summary of all candidates, their current stage, and key outcomes.  
-- 🤝 **Human-in-the-Loop Checkpoint** – HR receives a short confirmation prompt before final scheduling to ensure responsible autonomy.
+    %% Force Legend to be above Supervisor
+    Legend ~~~ Supervisor
 
-These enhancements demonstrate **true agentic behavior** — autonomous planning, adaptive execution, and transparent reasoning — in a simple, explainable way.
+    Supervisor[🤖 Supervisor Agent]
+
+    %% Sub-Agents
+    Gmail[📧 Gmail Agent]
+    Cal[📅 GCalendar Agent]
+    DBExec[💾 DB Executor]
+    CV[📄 CV Screener]
+    Voice[🎤 Voice Screener]
+
+    %% Delegation (Outbound)
+    Supervisor --> Gmail
+    Supervisor --> Cal
+    Supervisor --> DBExec
+    Supervisor --> CV
+    Supervisor --> Voice
+
+    %% Feedback (Inbound)
+    Gmail -.-> Supervisor
+    Cal -.-> Supervisor
+    DBExec -.-> Supervisor
+    CV -.-> Supervisor
+    Voice -.-> Supervisor
+
+    %% Styling
+    style Supervisor fill:#e1bee7,stroke:#4a148c,stroke-width:2px
+    style Gmail fill:#fff3e0,stroke:#e65100
+    style Cal fill:#fff3e0,stroke:#e65100
+    style DBExec fill:#fff3e0,stroke:#e65100
+    style CV fill:#e3f2fd,stroke:#1565c0
+    style Voice fill:#e3f2fd,stroke:#1565c0
+    style Legend fill:#f5f5f5,stroke:#9e9e9e,stroke-dasharray: 5 5
+```
+
+- **How it works:** Each *sub-agent* operates in its *own isolated context/thread*.
+- **Benefit:** The main Supervisor is not polluted with low-level execution logs. Sub-agents are **stateless** from the Supervisor's perspective—each trigger starts a fresh thread, preventing error accumulation in the workers.
+
+
+#### 2. Context Offloading & Loading (RAG-lite)
+We treat the database not just as storage, but as **offloaded context**.
+- **Offloading:** Candidate data, screening results, and interview states are persisted immediately to a structured SQL/JSON database.
+- **Loading:** The Supervisor does not keep all candidate data in memory. Instead, it utilizes the `db_executor` agent to **retrieve (load)** only the specific data points needed for the current planning step.
+- **Benefit:** Keeps the active context window lean and focused on *reasoning* rather than *storage*.
+
+#### 3. Adaptive Context Compaction
+For the **stateful Supervisor** (which manages the long-running user conversation), we implement **Compactive Summarization**.
+- **Mechanism:** As the conversation history exceeds a token threshold, older interactions are summarized into a concise narrative while recent messages are kept verbatim.
+- **Result:** The agent retains "long-term memory" of the conversation arc without hitting context window limits, keeping the Supervisor "forever young."
+
+```mermaid
+graph TD
+    User[User / API] -->|Long-running Thread| Supervisor
+    
+    subgraph "Stateful & Compacted"
+    Supervisor[Supervisor Agent]
+    Memory[Context Compaction Module] -.->|Summarizes History| Supervisor
+    end
+
+    subgraph "Stateless & Isolated"
+    CV[CV Screener]
+    Voice[Voice Screener]
+    end
+
+    subgraph "Context Offloading"
+    DB[(Postgres DB)]
+    end
+
+    Supervisor -->|Delegates Task| CV
+    Supervisor -->|Delegates Task| Voice
+    Supervisor -->|Queries/Updates| DB
+    
+    CV -.->|1. New Thread| CV
+    Voice -.->|1. New Thread| Voice
+```
+
+## ***`Model & Agent Registry`***
+
+A breakdown of the various LLMs, Agents, and Workflows powering the system.
+
+- 🤖 **Agent:** Autonomous entity that can use tools, plan multiple steps, and maintain reasoning loops.
+- ⚙️ **Workflow:** Deterministic, fixed sequence of operations (Pipeline). It may use LLMs for specific steps but the flow is hardcoded.
+- 🧠 **Simple LLM:** A direct "one-shot" call to a Language Model for a specific transformation (e.g., summarization, extraction) without tools or loops.
+
+| Component | Type | Model | Description | Location |
+| :--- | :--- | :--- | :--- | :--- |
+| **Supervisor Agent** | 🤖 **Agent** | `gpt-4o` | Orchestrates delegation, planning, and context management. | `src/agents/supervisor/supervisor_v2.py` |
+| **Gmail Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous email management via MCP (read/send/label). | `src/agents/gmail/gmail_agent.py` |
+| **GCalendar Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous calendar scheduling via MCP. | `src/agents/gcalendar/gcalendar_agent.py` |
+| **DB Executor** | 🤖 **Agent** | `gpt-4o` | Writes SQL/Python to query the database (CodeAct). | `src/agents/db_executor/db_executor.py` |
+| **CV Screening** | ⚙️ **Workflow** | `gpt-4o` | Deterministic pipeline: Fetch → Read → Evaluate → Save. | `src/agents/cv_screening/cv_screening_workflow.py` |
+| **Voice Judge** | 🧠 **Simple LLM** | `gpt-4o-audio` | Evaluates audio/transcripts for sentiment & confidence. | `src/agents/voice_screening/judge.py` |
+| **Doc Parser** | 🧠 **Simple LLM** | `gpt-4o-mini` | Vision-based PDF-to-Markdown conversion. | `src/doc_parser/pdf_to_markdown.py` |
+| **History Manager** | 🧠 **Simple LLM** | `gpt-4o-mini` | Summarizes conversation history for context compaction. | `src/context_eng/history_manager.py` |
+
+### 🔌 ***`Integrated MCP Servers`***
+The system integrates **Model Context Protocol (MCP)** servers to securely and standardizedly connect agents to external tools.
+
+| MCP Server | Purpose | Used By |
+| :--- | :--- | :--- |
+| **Gmail MCP** | Provides tools to `list`, `read`, `send`, and `label` emails. | `Gmail Agent` |
+| **Google Calendar MCP** | Provides tools to `list_events`, `create_event`, and `update_event`. | `GCalendar Agent` |
+
+> **Note:** Each MCP server runs as a standalone process that exposes a standardized tool interface, which the respective agent consumes dynamically.
+
+---
+
+## ***`License & Acknowledgments`***
+This project utilizes code from:
+- [gmail-mcp](https://github.com/theposch/gmail-mcp) by **theposch** (GPLv3)  
+  *Integrated at:* `src/mcp_servers/gmail-mcp/`
+- [calendar-mcp](https://github.com/deciduus/calendar-mcp) by **deciduus** (AGPL-3.0)  
+  *Integrated at:* `src/mcp_servers/calendar-mcp/`
+
+We deeply acknowledge these original works and the great AI and Data Science community that makes such collaboration possible. We distribute our modifications under the compatible license terms.
+
+---
 
 ## 👥 ***`Team`***
 | Member   |
 | -------- |
 | [Sebastian Wefers](https://github.com/Ocean-code-1995) |
+| [Dmitri Moscoglo](https://github.com/DimiM99) |
 | [Owen Kaplinsky](https://github.com/owenkaplinsky) |
 | [SrikarMK](https://github.com/Srikarmk) |
-| [Dmitri Moscoglo](https://github.com/DimiM99) |
-
-# ***`License`***
-
-This project includes and builds upon [gmail-mcp](https://github.com/theposch/gmail-mcp),  
-which is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
-
-This repository extends gmail-mcp for experimental integration and automation with Claude Desktop.  
-All modifications are distributed under the same GPLv3 license.
-
-> **Note:** The original gmail-mcp code has not been modified at this stage.

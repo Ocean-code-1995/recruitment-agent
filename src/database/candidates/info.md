@@ -30,6 +30,7 @@ erDiagram
         string phone_number
         string cv_file_path
         string parsed_cv_file_path
+        string auth_code
         enum status
         datetime created_at
         datetime updated_at
@@ -100,7 +101,8 @@ Stores base applicant information and application metadata.
 | `phone_number` | string | Contact number |
 | `cv_file_path` | string | Path or cloud URL to the uploaded CV |
 | `parsed_cv_file_path` | string | Path to parsed pdf file (stored as md) |
-| `status` | enum | Candidate stage (`applied`, `cv_screened`, `voice_done`, etc.) |
+| `auth_code` | string | 6-digit authentication code |
+| `status` | enum | Candidate stage (`applied`, `cv_screened`, `voice_invitation_sent`, `voice_done`, `cv_passed`, `cv_rejected`, `voice_passed`, `voice_rejected`, `interview_scheduled`, `decision_made`) |
 | `created_at` | datetime | Application timestamp |
 | `updated_at` | datetime | Last update timestamp |
 
@@ -157,7 +159,7 @@ Tracks HR interview scheduling and status.
 | `event_summary` | string | Event title |
 | `start_time` | datetime | Interview start time |
 | `end_time` | datetime | Interview end time |
-| `status` | enum | Scheduling status (`scheduled`, `completed`, `cancelled`) |
+| `status` | enum | Scheduling status (`scheduled`, `completed`, `cancelled`, `passed`, `rejected`) |
 | `timestamp` | datetime | Last updated timestamp |
 
 ---
@@ -171,7 +173,7 @@ Stores the overall hiring outcome after all screening stages.
 | `id` | UUID | Primary key |
 | `candidate_id` | FK | Reference to `candidates.id` |
 | `overall_score` | float | Aggregated weighted score |
-| `decision` | enum | `hire`, `reject`, or `maybe` |
+| `decision` | enum | `hired`, `rejected`, or `pending` |
 | `llm_rationale` | text | Model reasoning for decision |
 | `human_notes` | text | HR reviewer comments |
 | `timestamp` | datetime | Decision timestamp |

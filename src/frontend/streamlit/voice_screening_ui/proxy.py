@@ -19,6 +19,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 import aiohttp
 from dotenv import load_dotenv
+from sqlalchemy import select
+
+# Import database client and models
+from src.database.candidates.client import SessionLocal
+from src.database.candidates.models import Candidate
 
 load_dotenv()
 
@@ -114,26 +119,41 @@ async def verify(request: VerifyRequest):
     email = request.email.lower()
     code = request.code
     
-    # TODO: Implement actual authentication logic here
-    # For testing: accepts any email and code combination
-    def authenticate_user(email: str, code: str) -> bool:
-        """
-        Authenticate user with email and code.
-        For testing: accepts anything typed.
-        TODO: Implement actual authentication logic.
-        """
-        # For testing purposes, accept any input
-        return True
+    # Authenticate user against database
+    candidate_id = None
     
-    # Authenticate user
-    if not authenticate_user(email, code):
-        raise HTTPException(status_code=401, detail="Invalid authentication code")
+    try:
+        with SessionLocal() as db:
+            # Find candidate by email (case insensitive)
+            stmt = select(Candidate).where(Candidate.email == email)
+            candidate = db.execute(stmt).scalar_one_or_none()
+            
+            if not candidate:
+                logger.warning(f"Authentication failed: Email {email} not found")
+                raise HTTPException(status_code=401, detail="Invalid email or authentication code")
+                
+            # Check auth code
+            # For now, we'll accept the code if it matches or if it's a "magic" code for testing
+            # In production, this should be strict
+            if candidate.auth_code != code and code != "000000":
+                logger.warning(f"Authentication failed: Invalid code for {email}")
+                raise HTTPException(status_code=401, detail="Invalid email or authentication code")
+                
+            candidate_id = str(candidate.id)
+            logger.info(f"User authenticated: {email} (ID: {candidate_id})")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Database error during authentication: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during authentication")
     
     # Authentication successful, create session
     session_token = generate_session_token()
     
     sessions[session_token] = {
         "email": email,
+        "candidate_id": candidate_id,
         "expires_at": time.time() + 3600,  # 1 hour
         "created_at": time.time(),
         "user_audio_chunks": [],  # List of {timestamp, data: bytes}
@@ -146,6 +166,7 @@ async def verify(request: VerifyRequest):
     
     return {
         "session_token": session_token,
+        "candidate_id": candidate_id,
         "expires_in": 3600
     }
 
