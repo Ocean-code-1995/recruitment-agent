@@ -33,7 +33,7 @@ app.add_middleware(
 app.include_router(supervisor.router, prefix="/api/v1/supervisor", tags=["Supervisor"])
 app.include_router(cv_upload.router, prefix="/api/v1/cv", tags=["CV Upload"])
 app.include_router(database.router, prefix="/api/v1/db", tags=["Database"])
-# TODO app.include_router(voice_screener.router, prefix="/api/v1/voice-screener", tags=["Voice Screener"])
+app.include_router(voice_screener.router, prefix="/api/v1/voice-screener", tags=["Voice Screener"])
 
 
 @app.get("/health")
