@@ -10,7 +10,7 @@ from sqlalchemy import text
 # Ensure project root is in path
 import scripts.db  # noqa: F401
 
-from src.database.candidates.client import SessionLocal
+from src.backend.database.candidates.client import SessionLocal
 
 
 def test_session_query() -> bool:

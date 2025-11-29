@@ -11,7 +11,7 @@ from sqlalchemy import text
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 sys.path.append(project_root)
 
-from src.database.candidates.client import get_engine
+from src.backend.database.candidates.client import get_engine
 
 def wipe_database():
     print("⚠️  WARNING: This will PERMANENTLY DELETE ALL RECORDS from the 'candidates' table and all related tables (CASCADE).")

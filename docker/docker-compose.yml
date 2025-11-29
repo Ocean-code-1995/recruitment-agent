@@ -11,7 +11,7 @@ services:
     container_name: agentic_hr_db
     restart: always
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,8 +24,6 @@ services:
     env_file:
       - ../.env
     environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -43,17 +41,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Hey compose here is env file, 
-    # pass it to container, but not the .env itself
-    env_file:
-      - ../.env
+    # Using explicit environment variables instead of env_file to avoid port conflicts
     environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      # Explicitly set POSTGRES_HOST to the service name 'db' for Docker networking
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    command: ["python", "-m", "src.database.candidates.client"]
+    command: ["python", "-m", "src.backend.database.candidates.init_db"]
 
     volumes:
       # --- Local code mount (for development only) ---
@@ -77,17 +73,15 @@ services:
     depends_on:
       - db
       - supervisor_api
-    env_file:
-      - ../.env
     environment:
       # Database connection
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      CV_UPLOAD_PATH: /app/src/database/cvs/uploads
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      CV_UPLOAD_PATH: /app/src/backend/database/cvs/uploads
       # App specific
       CV_UPLOAD_API_URL: http://supervisor_api:8080/api/v1/cv
       PYTHONPATH: /app
@@ -95,7 +89,7 @@ services:
       # Mount local code for live updates
       - ../:/app
       # Shared volume for CV uploads (persistent)
-      - ../src/database/cvs:/app/src/database/cvs
+      - ../src/backend/database/cvs:/app/src/backend/database/cvs
     command: ["streamlit", "run", "src/frontend/streamlit/cv_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
@@ -117,6 +111,12 @@ services:
       PYTHONPATH: /app
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       BACKEND_API_URL: http://supervisor_api:8080
+      # Database connection
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       # Mount local code for live updates
       - ../:/app
@@ -159,12 +159,10 @@ services:
       - "8080:8080"  # Map host port 8080 to container port 8080
     depends_on:
       - db
-    env_file:
-      - ../.env
     environment:
       # We set POSTGRES_HOST to 'db' so the agent connects to the container internal network
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -172,10 +170,12 @@ services:
       PROMPTLAYER_API_KEY: ${PROMPTLAYER_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime
+      CV_UPLOAD_PATH: /app/src/backend/database/cvs/uploads
+      CV_PARSED_PATH: /app/src/backend/database/cvs/parsed
     volumes:
       # Mount local code for live updates
       - ../:/app
-    command: ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+    command: ["uvicorn", "src.backend.api.app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     networks:
       - hrnet
 
