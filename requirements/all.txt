@@ -1,0 +1,64 @@
+# Consolidated requirements with all dependencies
+# Deduplicated from all individual requirement files
+
+# Base dependencies
+python-dotenv
+pydantic>=2.0
+pydantic-settings
+promptlayer
+
+# LangChain & LangGraph
+langchain
+langchain-openai
+langchain-community
+langchain-mcp-adapters
+langgraph
+langgraph-cli
+
+# API Framework
+fastapi
+uvicorn[standard]
+
+# Web & HTTP
+websockets>=12.0
+requests
+aiohttp
+httpx>=0.28.1
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Google APIs
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+
+# MCP Server
+mcp
+
+# OpenAI
+openai
+
+# UI & Visualization
+streamlit
+rich
+
+# PDF & Image Processing
+pypdfium2
+pillow
+ftfy
+
+# Search & Tools
+duckduckgo-search
+langchain-tavily
+
+# Email validation
+email-validator
+pydantic[email]
+
+# Date utilities
+python-dateutil
+
+gradio==5.49.1
