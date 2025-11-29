@@ -77,7 +77,7 @@ class DatabaseClient:
         screenings = client.get_cv_screenings(min_score=0.8)
     """
     
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: Optional[str] = None, session_id: Optional[str] = None):
         """
         Initialize the Database client.
         
@@ -90,7 +90,14 @@ class DatabaseClient:
             "http://localhost:8080/api/v1/db"
         )
         self.base_url = _clean_base_url(raw)
+        self.session_id = (session_id or os.getenv("SESSION_ID") or "").strip().strip("\"'")
         self.timeout = 30
+
+    def _headers(self) -> dict:
+        headers = {}
+        if self.session_id:
+            headers["X-Session-Id"] = self.session_id
+        return headers
     
     # ==================================================================================
     # FLEXIBLE QUERY
@@ -138,6 +145,7 @@ class DatabaseClient:
         response = requests.post(
             f"{self.base_url}/query",
             json=payload,
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -187,6 +195,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/candidates",
             params=params,
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -220,6 +229,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/candidates/{candidate_id}",
             params={"include_relations": include_relations},
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -250,6 +260,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/candidates/email/{email}",
             params={"include_relations": include_relations},
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -294,6 +305,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/cv-screening",
             params=params,
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -337,6 +349,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/voice-screening",
             params=params,
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -384,6 +397,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/interviews",
             params=params,
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -431,6 +445,7 @@ class DatabaseClient:
         response = requests.get(
             f"{self.base_url}/decisions",
             params=params,
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -459,6 +474,7 @@ class DatabaseClient:
         """
         response = requests.get(
             f"{self.base_url}/stats",
+            headers=self._headers(),
             timeout=self.timeout
         )
         self._handle_error(response)
@@ -477,7 +493,7 @@ class DatabaseClient:
             True if healthy, False otherwise
         """
         try:
-            response = requests.get(f"{self.base_url}/health", timeout=5)
+            response = requests.get(f"{self.base_url}/health", timeout=5, headers=self._headers())
             return response.status_code == 200 and response.json().get("status") == "healthy"
         except requests.exceptions.RequestException:
             return False

@@ -54,7 +54,7 @@ class CVUploadClient:
             print(f"Error: {response.message}")
     """
     
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: Optional[str] = None, session_id: Optional[str] = None):
         """
         Initialize the CV Upload client.
         
@@ -67,6 +67,13 @@ class CVUploadClient:
             "http://localhost:8080/api/v1/cv"
         )
         self.base_url = _clean_base_url(raw)
+        self.session_id = (session_id or os.getenv("SESSION_ID") or "").strip().strip("\"'")
+
+    def _headers(self) -> dict:
+        headers = {}
+        if self.session_id:
+            headers["X-Session-Id"] = self.session_id
+        return headers
     
     def submit(
         self,
@@ -108,6 +115,7 @@ class CVUploadClient:
             f"{self.base_url}/submit",
             files=files,
             data=data,
+            headers=self._headers(),
             timeout=timeout
         )
         
@@ -140,7 +148,7 @@ class CVUploadClient:
             True if healthy, False otherwise
         """
         try:
-            response = requests.get(f"{self.base_url}/health", timeout=5)
+            response = requests.get(f"{self.base_url}/health", timeout=5, headers=self._headers())
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False

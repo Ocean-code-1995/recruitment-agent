@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers import supervisor, cv_upload, voice_screener, database
 from src.configs import get_openai_settings
+from src.api.middleware.session import SessionMiddleware
 
 # Validate OpenAI API key at startup (shows nice error if missing)
 get_openai_settings()
@@ -19,6 +20,9 @@ app = FastAPI(
     description="API layer for the HR Supervisor Agent and recruitment tools",
     version="1.0.0",
 )
+
+# Per-user session isolation
+app.add_middleware(SessionMiddleware)
 
 # CORS middleware for frontend integration
 app.add_middleware(

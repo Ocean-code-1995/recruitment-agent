@@ -87,7 +87,7 @@ class SupervisorClient:
         response2 = client.chat("Tell me more about the first one", thread_id="abc123")
     """
     
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: Optional[str] = None, session_id: Optional[str] = None):
         """
         Initialize the Supervisor client.
         
@@ -100,6 +100,14 @@ class SupervisorClient:
             "http://localhost:8080/api/v1/supervisor"
         )
         self.base_url = _clean_base_url(raw)
+        self.session_id = (session_id or os.getenv("SESSION_ID") or "").strip().strip("\"'")
+
+    def _headers(self) -> dict:
+        """Build headers including session isolation id."""
+        headers = {}
+        if self.session_id:
+            headers["X-Session-Id"] = self.session_id
+        return headers
     
     # =========================================================================
     # CONTEXT ENGINEERING METHODS (with CompactingSupervisor wrapper)
@@ -129,6 +137,7 @@ class SupervisorClient:
         response = requests.post(
             f"{self.base_url}/chat",
             json=payload,
+            headers=self._headers(),
             timeout=timeout
         )
         
@@ -182,6 +191,7 @@ class SupervisorClient:
             with requests.post(
                 f"{self.base_url}/chat/stream",
                 json=payload,
+                headers=self._headers(),
                 stream=True,
                 timeout=timeout
             ) as response:
@@ -243,7 +253,7 @@ class SupervisorClient:
         Raises:
             requests.exceptions.RequestException: On connection errors
         """
-        response = requests.post(f"{self.base_url}/new")
+        response = requests.post(f"{self.base_url}/new", headers=self._headers())
         response.raise_for_status()
         return response.json()["thread_id"]
     
@@ -278,6 +288,7 @@ class SupervisorClient:
         response = requests.post(
             f"{self.base_url}/raw/chat",
             json=payload,
+            headers=self._headers(),
             timeout=timeout
         )
         
@@ -332,6 +343,7 @@ class SupervisorClient:
             with requests.post(
                 f"{self.base_url}/raw/chat/stream",
                 json=payload,
+                headers=self._headers(),
                 stream=True,
                 timeout=timeout
             ) as response:
@@ -392,7 +404,7 @@ class SupervisorClient:
             True if healthy, False otherwise
         """
         try:
-            response = requests.get(f"{self.base_url}/health", timeout=5)
+            response = requests.get(f"{self.base_url}/health", timeout=5, headers=self._headers())
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False

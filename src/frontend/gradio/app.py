@@ -5,9 +5,10 @@ Requires Gradio 6.0+
 
 import os
 import gradio as gr
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 import sys
 from pathlib import Path
+from uuid import uuid4
 
 project_root = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -59,34 +60,36 @@ def get_api_url(service: str) -> str:
 # CANDIDATE APPLICATION PORTAL
 # ============================================================================
 
-def submit_application(full_name: str, email: str, phone: str, cv_file) -> str:
+def submit_application(full_name: str, email: str, phone: str, cv_file, session_state: Optional[Dict[str, Any]] = None) -> Tuple[str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return "❌ SDK not available. Please check backend connection."
+        return "❌ SDK not available. Please check backend connection.", ensure_session(session_state)
+    session = ensure_session(session_state)
     if not full_name or not email:
-        return "❌ Full name and email are required."
+        return "❌ Full name and email are required.", session
     if not cv_file:
-        return "❌ Please upload your CV (PDF or DOCX)."
+        return "❌ Please upload your CV (PDF or DOCX).", session
     try:
-        client = CVUploadClient(base_url=get_api_url("cv"))
+        client = CVUploadClient(base_url=get_api_url("cv"), session_id=session["session_id"])
         file_path = cv_file.name if hasattr(cv_file, 'name') else str(cv_file)
         filename = Path(file_path).name
         with open(file_path, 'rb') as f:
             response = client.submit(full_name=full_name, email=email, phone=phone or "", cv_file=f, filename=filename)
         if response.success:
-            return f"✅ {response.message}\n\nYour application has been recorded."
+            return f"✅ {response.message}\n\nYour application has been recorded.", session
         elif response.already_exists:
-            return f"⚠️ {response.message}\n\nPlease wait for review."
-        return f"❌ {response.message}"
+            return f"⚠️ {response.message}\n\nPlease wait for review.", session
+        return f"❌ {response.message}", session
     except Exception as e:
-        return f"❌ Failed to submit application: {str(e)}"
+        return f"❌ Failed to submit application: {str(e)}", session
 
-def check_application_status(email: str) -> str:
+def check_application_status(email: str, session_state: Optional[Dict[str, Any]] = None) -> Tuple[str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return "❌ SDK not available."
+        return "❌ SDK not available.", ensure_session(session_state)
+    session = ensure_session(session_state)
     if not email:
-        return "❌ Please enter your email address."
+        return "❌ Please enter your email address.", session
     try:
-        client = DatabaseClient(base_url=get_api_url("database"))
+        client = DatabaseClient(base_url=get_api_url("database"), session_id=session["session_id"])
         response = client.get_candidate_by_email(email, include_relations=True)
         if response.success and response.data:
             c = response.data
@@ -101,25 +104,26 @@ def check_application_status(email: str) -> str:
                 info += f"**Interview:** {c['interview_scheduling'][0].get('status', 'Scheduled')}\n\n"
             if c.get('final_decision'):
                 info += f"**Decision:** {c['final_decision'].get('decision', 'Pending')}"
-            return info
-        return f"❌ No application found for {email}."
+            return info, session
+        return f"❌ No application found for {email}.", session
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return f"❌ Error: {str(e)}", session
 
 # ============================================================================
 # HR PORTAL
 # ============================================================================
 
-def load_candidates(status_filter: Optional[str] = None) -> str:
+def load_candidates(status_filter: Optional[str] = None, session_state: Optional[Dict[str, Any]] = None) -> Tuple[str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return "❌ SDK not available."
+        return "❌ SDK not available.", ensure_session(session_state)
+    session = ensure_session(session_state)
     try:
-        client = DatabaseClient(base_url=get_api_url("database"))
+        client = DatabaseClient(base_url=get_api_url("database"), session_id=session["session_id"])
         response = client.get_candidates(status=status_filter if status_filter != "All" else None, limit=100, include_relations=True)
         if response.success and response.data:
             candidates = response.data
             if not candidates:
-                return "No candidates found."
+                return "No candidates found.", session
             table = "| Name | Email | Status | Applied | Voice |\n|------|-------|--------|---------|-------|\n"
             for c in candidates:
                 name = c.get('full_name', 'Unknown')
@@ -128,54 +132,55 @@ def load_candidates(status_filter: Optional[str] = None) -> str:
                 applied = str(c.get('created_at', 'N/A'))[:10]
                 voice = "✅" if c.get('voice_screening_results') else "❌"
                 table += f"| {name} | {email} | {status} | {applied} | {voice} |\n"
-            return f"**Found {len(candidates)} candidate(s)**\n\n{table}"
-        return "No candidates found."
+            return f"**Found {len(candidates)} candidate(s)**\n\n{table}", session
+        return "No candidates found.", session
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return f"❌ Error: {str(e)}", session
 
-def trigger_voice_screening(candidate_email: str) -> str:
+def trigger_voice_screening(candidate_email: str, session_state: Optional[Dict[str, Any]] = None) -> Tuple[str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return "❌ SDK not available."
+        return "❌ SDK not available.", ensure_session(session_state)
+    session = ensure_session(session_state)
     if not candidate_email:
-        return "❌ Please enter candidate email."
+        return "❌ Please enter candidate email.", session
     try:
-        client = SupervisorClient(base_url=get_api_url("supervisor"))
+        client = SupervisorClient(base_url=get_api_url("supervisor"), session_id=session["session_id"])
         thread_id = client.new_chat()
         response = client.chat(message=f"Please trigger voice screening for candidate with email {candidate_email}", thread_id=thread_id)
         token_info = f"\n\n📊 Tokens: {response.token_count:,}" if response.token_count else ""
-        return f"✅ Voice screening triggered!\n\n{response.content}{token_info}"
+        return f"✅ Voice screening triggered!\n\n{response.content}{token_info}", session
     except Exception as e:
-        return f"❌ Failed: {str(e)}"
+        return f"❌ Failed: {str(e)}", session
 
-def schedule_interview(candidate_email: str) -> str:
+def schedule_interview(candidate_email: str, session_state: Optional[Dict[str, Any]] = None) -> Tuple[str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return "❌ SDK not available."
+        return "❌ SDK not available.", ensure_session(session_state)
+    session = ensure_session(session_state)
     if not candidate_email:
-        return "❌ Please enter candidate email."
+        return "❌ Please enter candidate email.", session
     try:
-        client = SupervisorClient(base_url=get_api_url("supervisor"))
+        client = SupervisorClient(base_url=get_api_url("supervisor"), session_id=session["session_id"])
         thread_id = client.new_chat()
         response = client.chat(message=f"Please schedule an interview for candidate with email {candidate_email}", thread_id=thread_id)
         token_info = f"\n\n📊 Tokens: {response.token_count:,}" if response.token_count else ""
-        return f"✅ Interview scheduling initiated!\n\n{response.content}{token_info}"
+        return f"✅ Interview scheduling initiated!\n\n{response.content}{token_info}", session
     except Exception as e:
-        return f"❌ Failed: {str(e)}"
+        return f"❌ Failed: {str(e)}", session
 
 # ============================================================================
-# SUPERVISOR AGENT CHAT
+# SUPERVISOR AGENT CHAT (per-user state via session dict)
 # ============================================================================
 
-class ChatState:
-    def __init__(self):
-        self.thread_id: Optional[str] = None
-        self.messages: list = []
-        self.total_tokens: int = 0
-    def reset(self):
-        self.thread_id = None
-        self.messages = []
-        self.total_tokens = 0
-
-chat_state = ChatState()
+def ensure_session(state: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Ensure a per-user session dict exists with a unique session_id."""
+    if state is None:
+        state = {}
+    if not state.get("session_id"):
+        state["session_id"] = uuid4().hex
+    state.setdefault("thread_id", None)
+    state.setdefault("messages", [])
+    state.setdefault("total_tokens", 0)
+    return state
 
 def format_chat_history(messages: list) -> str:
     if not messages:
@@ -188,15 +193,16 @@ def format_chat_history(messages: list) -> str:
             formatted.append(f"🤖 **Assistant**\n\n{content}")
     return "\n\n---\n\n".join(formatted)
 
-def init_chat() -> Tuple[str, str]:
+def init_chat(session_state: Optional[Dict[str, Any]] = None) -> Tuple[str, str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return "❌ SDK not available.", "📊 Tokens: 0"
+        return "❌ SDK not available.", "📊 Tokens: 0", ensure_session(session_state)
+    session = ensure_session(session_state)
     try:
-        client = SupervisorClient(base_url=get_api_url("supervisor"))
+        client = SupervisorClient(base_url=get_api_url("supervisor"), session_id=session["session_id"])
         thread_id = client.new_chat()
-        chat_state.thread_id = thread_id
-        chat_state.messages = []
-        chat_state.total_tokens = 0
+        session["thread_id"] = thread_id
+        session["messages"] = []
+        session["total_tokens"] = 0
         welcome = """Hello! I'm the HR Supervisor Agent. I can help you with:
 
 - **Querying** candidate information
@@ -205,29 +211,30 @@ def init_chat() -> Tuple[str, str]:
 - **Managing** the recruitment pipeline
 
 What would you like to know?"""
-        chat_state.messages.append(("assistant", welcome))
-        return format_chat_history(chat_state.messages), "📊 Tokens: 0"
+        session["messages"].append(("assistant", welcome))
+        return format_chat_history(session["messages"]), "📊 Tokens: 0", session
     except Exception as e:
-        return f"❌ Failed to initialize: {str(e)}", "📊 Tokens: 0"
+        return f"❌ Failed to initialize: {str(e)}", "📊 Tokens: 0", session
 
-def chat_with_supervisor(message: str, history: str) -> Tuple[str, str, str]:
+def chat_with_supervisor(message: str, history: str, session_state: Optional[Dict[str, Any]]) -> Tuple[str, str, str, Dict[str, Any]]:
     if not SDK_AVAILABLE:
-        return history, "❌ SDK not available.", ""
+        return history, "❌ SDK not available.", "", ensure_session(session_state)
+    session = ensure_session(session_state)
     if not message.strip():
-        return history, f"📊 Tokens: {chat_state.total_tokens:,}", ""
-    if not chat_state.thread_id:
-        init_chat()
+        return history, f"📊 Tokens: {session['total_tokens']:,}", "", session
+    if not session.get("thread_id"):
+        _, _, session = init_chat(session)
     try:
-        client = SupervisorClient(base_url=get_api_url("supervisor"))
-        chat_state.messages.append(("user", message))
-        response = client.chat(message=message, thread_id=chat_state.thread_id)
-        chat_state.messages.append(("assistant", response.content))
-        chat_state.total_tokens += response.token_count or 0
-        return format_chat_history(chat_state.messages), f"📊 Tokens: {chat_state.total_tokens:,}", ""
+        client = SupervisorClient(base_url=get_api_url("supervisor"), session_id=session["session_id"])
+        session["messages"].append(("user", message))
+        response = client.chat(message=message, thread_id=session["thread_id"])
+        session["messages"].append(("assistant", response.content))
+        session["total_tokens"] += response.token_count or 0
+        return format_chat_history(session["messages"]), f"📊 Tokens: {session['total_tokens']:,}", "", session
     except Exception as e:
         error_msg = f"❌ Error: {str(e)}"
-        chat_state.messages.append(("assistant", error_msg))
-        return format_chat_history(chat_state.messages), f"📊 Tokens: {chat_state.total_tokens:,}", ""
+        session["messages"].append(("assistant", error_msg))
+        return format_chat_history(session["messages"]), f"📊 Tokens: {session['total_tokens']:,}", "", session
 
 # ============================================================================
 # CUSTOM CSS
@@ -701,6 +708,9 @@ def create_app():
             <p>AI-Powered Recruitment System</p>
         </div>
         """)
+
+        # Per-user session state (persists across interactions)
+        session_state = gr.State(value=None)
         
         with gr.Tabs():
             # ============================================================
@@ -724,8 +734,8 @@ def create_app():
                 
                 submit_btn.click(
                     fn=submit_application,
-                    inputs=[full_name, email, phone, cv_file],
-                    outputs=application_output
+                    inputs=[full_name, email, phone, cv_file, session_state],
+                    outputs=[application_output, session_state]
                 )
                 
                 gr.Markdown("---")
@@ -736,7 +746,7 @@ def create_app():
                     check_btn = gr.Button("🔍 Check Status", variant="secondary", scale=1)
                 
                 status_output = gr.Markdown()
-                check_btn.click(fn=check_application_status, inputs=status_email, outputs=status_output)
+                check_btn.click(fn=check_application_status, inputs=[status_email, session_state], outputs=[status_output, session_state])
             
             # ============================================================
             # TAB 2: HR Portal
@@ -754,7 +764,7 @@ def create_app():
                     load_btn = gr.Button("🔄 Load Candidates", variant="primary", scale=1)
                 
                 candidates_output = gr.Markdown()
-                load_btn.click(fn=load_candidates, inputs=status_filter, outputs=candidates_output)
+                load_btn.click(fn=load_candidates, inputs=[status_filter, session_state], outputs=[candidates_output, session_state])
                 
                 gr.Markdown("---")
                 gr.Markdown("## 🎙️ Voice Screening")
@@ -764,7 +774,7 @@ def create_app():
                     voice_btn = gr.Button("🎙️ Trigger Screening", variant="secondary", scale=1)
                 
                 voice_output = gr.Markdown(elem_classes=["no-scroll-output"])
-                voice_btn.click(fn=trigger_voice_screening, inputs=voice_email, outputs=voice_output)
+                voice_btn.click(fn=trigger_voice_screening, inputs=[voice_email, session_state], outputs=[voice_output, session_state])
                 
                 gr.Markdown("---")
                 gr.Markdown("## 📅 Interview Scheduling")
@@ -774,7 +784,7 @@ def create_app():
                     interview_btn = gr.Button("📅 Schedule Interview", variant="secondary", scale=1)
                 
                 interview_output = gr.Markdown(elem_classes=["no-scroll-output"])
-                interview_btn.click(fn=schedule_interview, inputs=interview_email, outputs=interview_output)
+                interview_btn.click(fn=schedule_interview, inputs=[interview_email, session_state], outputs=[interview_output, session_state])
             
             # ============================================================
             # TAB 3: Supervisor Chat
@@ -809,13 +819,14 @@ def create_app():
                         """)
                 
                 # Initialize chat on load with auto-scroll
-                def init_chat_with_scroll():
-                    hist, tokens = init_chat()
-                    return hist, tokens
+                def init_chat_with_scroll(state):
+                    hist, tokens, new_state = init_chat(state)
+                    return hist, tokens, new_state
                 
                 app.load(
                     fn=init_chat_with_scroll, 
-                    outputs=[chat_history, token_info]
+                    inputs=[session_state],
+                    outputs=[chat_history, token_info, session_state]
                 ).then(
                     fn=None,
                     js="""
@@ -833,8 +844,8 @@ def create_app():
                 # Send message with auto-scroll
                 send_btn.click(
                     fn=chat_with_supervisor,
-                    inputs=[chat_input, chat_history],
-                    outputs=[chat_history, token_info, chat_input]
+                    inputs=[chat_input, chat_history, session_state],
+                    outputs=[chat_history, token_info, chat_input, session_state]
                 ).then(
                     fn=None,
                     js="""
@@ -853,7 +864,8 @@ def create_app():
                 # New chat with auto-scroll
                 new_chat_btn.click(
                     fn=init_chat, 
-                    outputs=[chat_history, token_info]
+                    inputs=[session_state],
+                    outputs=[chat_history, token_info, session_state]
                 ).then(
                     fn=None,
                     js="""
