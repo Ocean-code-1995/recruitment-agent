@@ -1,4 +1,5 @@
 import os
+import socket
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.database.candidates.models import Base
@@ -16,17 +17,25 @@ def get_engine():
     """
     settings = get_database_settings()
 
-    # Allow POSTGRES_HOST override (Docker will set it to 'db')
-    # Strip whitespace to avoid DNS resolution issues on Windows
-    postgres_host = os.getenv("POSTGRES_HOST", settings.host).strip()
+    # Allow POSTGRES_HOST override; strip whitespace/quotes to avoid DNS issues
+    raw_host = os.getenv("POSTGRES_HOST", settings.host)
+    postgres_host = raw_host.strip().strip("\"'")
+
+    # If 'db' (compose) is not resolvable (single-container run), fall back to host.docker.internal
+    try:
+        socket.gethostbyname(postgres_host)
+    except Exception:
+        fallback = os.getenv("POSTGRES_HOST_FALLBACK", "host.docker.internal").strip().strip("\"'")
+        print(f"[db-client] Host '{postgres_host}' not resolvable; falling back to '{fallback}'")
+        postgres_host = fallback
+
     database_url = (
         f"postgresql+psycopg2://{settings.user}:{settings.password}"
         f"@{postgres_host}:{settings.port}/{settings.db}"
     )
 
-    print(f"🔌 Connecting to database at {postgres_host}:{settings.port} ...")
+    print(f"[db-client] Connecting to database at host={postgres_host} port={settings.port} db={settings.db} user={settings.user}", flush=True)
 
-    # Optional: echo=True for debugging SQL statements
     return create_engine(database_url, echo=False, future=True)
 
 
