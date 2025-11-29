@@ -1,0 +1,63 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env/
+**/.venv
+**/venv
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local Secrets (if not explicitly needed, though some might be copied selectively in Dockerfile)
+# Note: The Dockerfile copies secrets/, so we might want to be careful. 
+# But usually ignoring .env files that are not the main one is good practice.
+# However, the docker-compose uses env_file from ../.env and the Dockerfile copies .env.
+# We should probably NOT ignore .env or secrets/ if they are used.
+# But the error is specifically about .venv in a subdir.
+
+# Specific exclusions for this project structure
+src/mcp_servers/gmail-mcp/.venv/
+
