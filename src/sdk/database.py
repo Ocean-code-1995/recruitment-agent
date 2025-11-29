@@ -12,6 +12,14 @@ from uuid import UUID
 import requests
 
 
+def _clean_base_url(url: str) -> str:
+    """Normalize base URL to avoid issues from quoted env vars."""
+    cleaned = url.strip().strip("\"'")
+    if cleaned.endswith("/"):
+        cleaned = cleaned[:-1]
+    return cleaned
+
+
 @dataclass
 class QueryResponse:
     """Response from a database query."""
@@ -77,10 +85,11 @@ class DatabaseClient:
             base_url: API base URL. Defaults to DATABASE_API_URL env var
                       or http://localhost:8080/api/v1/db
         """
-        self.base_url = base_url or os.getenv(
+        raw = base_url or os.getenv(
             "DATABASE_API_URL",
             "http://localhost:8080/api/v1/db"
         )
+        self.base_url = _clean_base_url(raw)
         self.timeout = 30
     
     # ==================================================================================

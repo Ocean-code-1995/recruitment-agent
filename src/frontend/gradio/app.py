@@ -881,10 +881,15 @@ if __name__ == "__main__":
     print(f"Gradio version: {gr.__version__}")
     app = create_app()
     
+    # Honor PORT if provided by hosting platform (e.g., Hugging Face Spaces)
+    # Some platforms inject quotes around PORT (e.g., "\"7860\""); strip them.
+    raw_port = os.getenv("PORT", "7860").strip().strip("\"'")
+    port = int(raw_port)
+    
     # In Gradio 6, theme and css are passed to launch(), not Blocks()
     app.launch(
         server_name="0.0.0.0",
-        server_port=7860,
+        server_port=port,
         theme=THEME,
         css=CUSTOM_CSS,
         # Try to force light mode if available

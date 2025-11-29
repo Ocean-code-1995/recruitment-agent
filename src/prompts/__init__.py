@@ -16,6 +16,8 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 
 # Singleton PromptManager instance
 _prompt_manager = PromptManager(environment=os.getenv("PROMPT_ENVIRONMENT", "production"))
+# Force local-only prompts; disable remote PromptLayer client if present
+_prompt_manager.client = None
 
 
 def get_prompt(
@@ -26,27 +28,21 @@ def get_prompt(
     latest_version: bool = False,
 ) -> str:
     """
-    Load a prompt either from:
-    - A local file (if local_prompt_path is provided)
-    - PromptLayer (default)
+    Load a prompt from local templates only (PromptLayer disabled here).
 
     Strategy:
-    - If local_prompt_path is explicitly passed, use it (Highest priority).
-    - If PROMPTLAYER_API_KEY is set, assume we want Remote (local_prompt_path=None).
-    - If NO API key, fallback to default local TEMPLATES_DIR.
+    - If local_prompt_path is provided, use it.
+    - Otherwise, use the default templates directory.
     """
+    # Normalize template name to match folder names (lowercase)
+    if template_name:
+        template_name = template_name.lower()
+
     if local_prompt_path:
-        # If path is relative, assume it is inside templates/ directory
         if not os.path.isabs(local_prompt_path):
             local_prompt_path = os.path.join(TEMPLATES_DIR, local_prompt_path)
     else:
-        # No path provided
-        if os.getenv("PROMPTLAYER_API_KEY"):
-            # User has API key -> Use Remote (pass None)
-            local_prompt_path = None
-        else:
-            # No API key -> Force Local Default
-            local_prompt_path = TEMPLATES_DIR
+        local_prompt_path = TEMPLATES_DIR
 
     return _prompt_manager.get_prompt(
         template_name=template_name,

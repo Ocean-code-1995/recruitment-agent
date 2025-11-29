@@ -21,7 +21,7 @@ import os
 # We will instantiate the model dynamically based on input availability
 
 SYSTEM_PROMPT = get_prompt(
-    template_name="Voice_Screening_Judge",
+    template_name="voice_screening_judge",
     latest_version=True
 )
 

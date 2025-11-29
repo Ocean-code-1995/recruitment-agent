@@ -10,6 +10,14 @@ from typing import Optional, BinaryIO
 import requests
 
 
+def _clean_base_url(url: str) -> str:
+    """Normalize base URL to avoid issues from quoted env vars."""
+    cleaned = url.strip().strip("\"'")
+    if cleaned.endswith("/"):
+        cleaned = cleaned[:-1]
+    return cleaned
+
+
 @dataclass
 class SubmitResponse:
     """Response from a CV submission."""
@@ -54,10 +62,11 @@ class CVUploadClient:
             base_url: API base URL. Defaults to CV_UPLOAD_API_URL env var
                       or http://localhost:8080/api/v1/cv
         """
-        self.base_url = base_url or os.getenv(
+        raw = base_url or os.getenv(
             "CV_UPLOAD_API_URL",
             "http://localhost:8080/api/v1/cv"
         )
+        self.base_url = _clean_base_url(raw)
     
     def submit(
         self,

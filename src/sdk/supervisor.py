@@ -29,6 +29,14 @@ from typing import Generator, Optional
 import requests
 
 
+def _clean_base_url(url: str) -> str:
+    """Normalize base URL to avoid issues from quoted env vars."""
+    cleaned = url.strip().strip("\"'")
+    if cleaned.endswith("/"):
+        cleaned = cleaned[:-1]
+    return cleaned
+
+
 @dataclass
 class ChatResponse:
     """Response from a chat request."""
@@ -87,10 +95,11 @@ class SupervisorClient:
             base_url: API base URL. Defaults to SUPERVISOR_API_URL env var
                       or http://localhost:8080/api/v1/supervisor
         """
-        self.base_url = base_url or os.getenv(
+        raw = base_url or os.getenv(
             "SUPERVISOR_API_URL", 
             "http://localhost:8080/api/v1/supervisor"
         )
+        self.base_url = _clean_base_url(raw)
     
     # =========================================================================
     # CONTEXT ENGINEERING METHODS (with CompactingSupervisor wrapper)
