@@ -13,6 +13,10 @@ For most use cases, import individual settings directly:
 from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from .cv import CVUploadSettings
 from .database import DatabaseSettings
@@ -28,8 +32,6 @@ class Settings(BaseSettings):
     """
     
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
         extra="ignore",
     )
     

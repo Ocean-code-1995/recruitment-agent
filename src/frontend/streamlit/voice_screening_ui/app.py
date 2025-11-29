@@ -10,13 +10,10 @@ import uuid
 import sys
 from pathlib import Path
 
-# Load environment variables from .env file
+# Load environment variables
 try:
     from dotenv import load_dotenv
-    # Load from repo root .env
-    env_path = Path(__file__).parent.parent.parent / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
+    load_dotenv()
 except ImportError:
     pass  # dotenv not installed, will try to get from environment
 

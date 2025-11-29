@@ -4,8 +4,8 @@ from sqlalchemy import select, desc
 from uuid import uuid4
 from dotenv import load_dotenv
 
-# Load .env from project root
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+# Load environment variables
+load_dotenv()
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))

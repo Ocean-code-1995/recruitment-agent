@@ -5,15 +5,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic import ValidationError
 import sys
-import os
+
+# Load environment variables
+load_dotenv()
 
 
 class OpenAIApiKey(BaseSettings):
     """Schema for validating and loading the OpenAI API key configuration.
     """
     model_config = ConfigDict(
-        env_file=Path(__file__).resolve().parents[2] / ".env",     # = root/.env
-        env_file_encoding="utf-8",
         title="OpenAI API Key Schema",
         description="Validates and loads the OpenAI API key from environment variables.",
     )
