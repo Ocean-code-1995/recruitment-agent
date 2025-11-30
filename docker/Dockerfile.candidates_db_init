@@ -1,0 +1,22 @@
+# --- Dockerfile.candidates_db_init ---
+FROM python:3.12-slim
+
+# Set working directory inside container
+WORKDIR /app
+
+# Install system dependencies needed for psycopg2
+RUN apt-get update && apt-get install -y \
+    libpq-dev gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file and install dependencies
+
+COPY ../requirements/base.txt ./requirements/base.txt
+COPY ../requirements/db.txt  ./requirements/db.txt
+RUN pip install --no-cache-dir -r requirements/db.txt
+
+# Copy *only* the candidate database module
+COPY src/database/candidates ./src/database/candidates
+
+# Default command (overridden by docker-compose.yml)
+CMD ["python", "-m", "src.database.candidates.client"]

@@ -1,0 +1,69 @@
+
+# Ignore secret JSONs, not the folder
+secrets/**/credentials.json
+secrets/**/token.json
+
+secrets/**/calendar_credentials.json
+secrets/**/calendar_token.json
+
+# (Optional) ignore any backup or tmp credentials
+secrets/**/*_backup.json
+
+# any log files
+*.log
+
+__pycache__/
+*.pyc
+
+.env
+
+# pycahche files everywhere
+**/__pycache__/
+**/*.pyc
+**/.DS_Store
+
+
+# data
+src/database/cvs/uploads
+src/database/cvs/parsed
+
+
+
+# Local credentials / tokens
+.gcloud/
+.env
+.env.*
+**/credentials.json
+/results/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+*.auto.tfvars
+.override.tf
+override.tf
+
+
+# Ignore only .pdf and .txt files in uploads and parsed folders
+src/database/cvs/uploads/*.pdf
+src/database/cvs/uploads/*.txt
+src/database/cvs/parsed/*.pdf
+src/database/cvs/parsed/*.txt
+
+src/database/cvs/tests/*.pdf
+src/database/cvs/tests/*.txt
+
+# Keep these files
+!src/database/cvs/uploads/.gitkeep
+!src/database/cvs/parsed/.gitkeep
+!src/database/cvs/uploads/info.md
+!src/database/cvs/parsed/info.md
+
+# lamnggraph CLI cache
+.lgcache/
+.langgraph_api/
+
+.idea/

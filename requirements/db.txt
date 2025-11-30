@@ -1,0 +1,4 @@
+# data base requirements
+-r base.txt
+sqlalchemy
+psycopg2-binary

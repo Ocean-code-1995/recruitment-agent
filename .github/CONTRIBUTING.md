@@ -48,8 +48,11 @@ main ← dev ← feature/email-agent
 
 **dev**
 - Requires PR review before merging  
+- Requires at least 1 approval  
+- Conversations must be resolved  
+- Status checks optional (for fast iteration)  
 - No direct commits or force pushes  
-- Status checks optional (for fast iteration)
+- Squash or rebase merges only (no merge commits)
 
 ---
 
@@ -77,21 +80,24 @@ main ← dev ← feature/email-agent
 
 ## 💬 Reviews
 
-- At least **one reviewer** per PR.
-- Anyone can review — small teams move faster.
-- Prefer **pair reviews** for big changes.
-- Minor changes (docs, comments) can be self-approved if trivial.
+- At least **one reviewer** per PR.  
+- Anyone can review — small teams move faster.  
+- **Pair reviews** encouraged for big changes.  
+- Minor changes (docs, comments) may be self-approved if trivial.
+
+---
+---
+
+## ⚙️ Branch Protection Setup (GitHub Rulesets)
+
+You can configure these under  
+➡️ **Settings → Code and automation → Rulesets**
+
+| Branch | Require PR | Required Approvals | Require Status Checks | Require Conversation Resolution | Allow Merge Commit | Force Push | Delete Branch |
+| :------ | :----------- | :----------------- | :-------------------- | :------------------------------ | :----------------- | :---------- | :------------- |
+| `main`  | ✅ | 1 | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `dev`   | ✅ | 1 | optional | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
 Thanks for contributing — keep it fast, clean, and collaborative! 🚀
-
-## ⚙️ Branch Protection Setup (GitHub UI summary)
-
-You can set these under
-➡️ Settings → Branches → Branch protection rules
-
-| Branch | Require PR review | Require status checks | Up to date before merge | Restrict pushes | Allow force push |
-| :----- | :---------------- | :-------------------- | :---------------------- | :-------------- | :--------------- |
-| `main` | ✅                 | ✅                     | ✅                       | ✅               | ❌                |
-| `dev`  | ✅                 | optional              | ❌                       | ✅               | ❌                |
