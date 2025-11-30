@@ -68,3 +68,6 @@ src/database/cvs/tests/*.txt
 .langgraph_api/
 
 .idea/
+
+# any .wav files
+*.wav

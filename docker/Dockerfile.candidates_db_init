@@ -15,8 +15,10 @@ COPY ../requirements/base.txt ./requirements/base.txt
 COPY ../requirements/db.txt  ./requirements/db.txt
 RUN pip install --no-cache-dir -r requirements/db.txt
 
-# Copy *only* the candidate database module
-COPY src/database/candidates ./src/database/candidates
+# Copy required source modules
+COPY src/backend/database/candidates ./src/backend/database/candidates
+COPY src/backend/state ./src/backend/state
+COPY src/backend/configs ./src/backend/configs
 
 # Default command - use dedicated init script to avoid circular import
-CMD ["python", "-m", "src.database.candidates.init_db"]
+CMD ["python", "-m", "src.backend.database.candidates.init_db"]

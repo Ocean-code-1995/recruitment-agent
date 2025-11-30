@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from src.database.candidates.client import SessionLocal
-from src.database.candidates.models import Candidate, CVScreeningResult
-from src.state.candidate import CandidateStatus
+from src.backend.database.candidates.client import SessionLocal
+from src.backend.database.candidates.models import Candidate, CVScreeningResult
+from src.backend.state.candidate import CandidateStatus
 
 def create_dummy_candidate():
     with SessionLocal() as db:

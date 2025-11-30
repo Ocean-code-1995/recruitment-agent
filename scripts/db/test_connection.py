@@ -11,7 +11,7 @@ from sqlalchemy import text
 # Ensure project root is in path
 import scripts.db  # noqa: F401
 
-from src.database.candidates.client import get_engine
+from src.backend.database.candidates.client import get_engine
 
 
 def test_connection() -> bool:

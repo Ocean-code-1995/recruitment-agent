@@ -48,14 +48,19 @@
 
 ## **Problem Statement**
 
-Modern recruitment is buckling under high volumes and inefficiency, creating a critical bottleneck for organizational growth.
+Modern recruitment processes remain **slow**, **resource-intensive**, and increasingly **unsustainable** for HR teams amid persistent talent shortages and evolving skill demands. Recent industry reports underscore structural bottlenecks that hinder efficient hiring.
 
-*   **Overwhelmed Teams**: **35%** of recruiter time is lost to admin tasks like scheduling [`2`], with **27%** of leaders citing workload overload [`2`].
-*   **Slow & Expensive**: Average time-to-hire is **44 days** [`1`], with costs reaching **$4,700 per hire** [`1`].
-*   **Inefficient Funnel**: While job posts attract hundreds of applicants, only **5%** complete the process [`1`], and **76%** of employers still struggle to find the right talent [`3`].
-*   **Burnout Risk**: **51%** of HR teams face high turnover risks [`2`], driven by the inability to scale manual screening against rising application volumes.
+High **applicant volumes overwhelm recruiters**, with a *typical job posting attracting hundreds of applications*, many *unqualified*, leading to administrative burdens and rushed evaluations. This results in *only about **5%** of viewers completing applications*, while teams waste time sifting through low-quality submissions. [`1`]
 
-This agentic system automates high-volume screening tasks, allowing HR professionals to focus on strategic decision-making.
+Screening and early-stage evaluation consume excessive recruiter time, with **35%** of their efforts dedicated to tasks like interview scheduling alone, exacerbating workload pressures. Talent acquisition leaders report unmanageable demands, with **27%** citing overload as a key issue, up from prior years. [`2`]
+
+**Hiring timelines average 44 days across industries**, driven by skills mismatches and manual processes that delay filling critical roles. Globally, **76%** of employers struggle to fill positions due to talent gaps, particularly in tech and healthcare sectors. [`1`, `3`]
+
+The financial toll is significant, with **average cost-per-hire reaching $4,700**, fueled by prolonged cycles, high turnover in recruitment teams (projected at **51%** as a top 2025 challenge), and inefficiencies in sourcing. [`1`, `2`]
+
+HR professionals **face rising burnout** from these pressures, compounded by competition for diverse talent and the **need for more touchpoints in hiring**, which **45%** of leaders say adds complexity. Skills shortages, cited by **63%** of employers as the primary barrier to growth, further strain teams. [`2`, `4`]
+
+These challenges reveal that **traditional manual recruitment fails to scale** in a competitive 2025 landscape. An AI-driven recruitment agent can alleviate bottlenecks by automating screening, accelerating timelines, enhancing consistency, and allowing HR to prioritize strategic decisions over repetitive tasks.
 
 
 
@@ -69,17 +74,37 @@ This agentic system automates high-volume screening tasks, allowing HR professio
 
 4. [World Economic Forum — The Future of Jobs Report 2025](https://www.weforum.org/publications/the-future-of-jobs-report-2025/digest/)
 
-
 ## **Ethical & Regulatory Considerations**
 
-This project is an **experimental prototype** designed to demonstrate technical orchestration of LLM agents, **not a production-ready HR system**.
+This project was developed as an **experimental prototype for a hackathon**, designed to showcase how language-model agents can automate structured workflows. It is **not intended for production deployment** as an autonomous hiring system. Because it touches on the automated assessment of humans, it must be approached with caution and interpreted within the correct ethical and regulatory context.
 
-*   **Human-in-the-Loop (HITL)**: The system is purely assistive. All final decisions (approvals/rejections) must be made by human recruiters.
-*   **EU AI Act Compliance**: Recruitment AI is classified as **High-Risk**. This prototype addresses key requirements via:
-    *   **Transparency**: Clear logs of agent reasoning.
-    *   **Oversight**: No autonomous final judgments.
-    *   **Prohibited Practices**: No emotion recognition, biometric inference, or psychographic profiling.
-*   **Scope**: Limited to workflow automation and initial screening support. It does not replace human judgment.
+The risks of algorithmic profiling have been widely documented, most notably during the **Cambridge Analytica scandal**, where data from millions of users was harvested and used for psychographic targeting without consent. This episode demonstrated how data-driven models can be leveraged to manipulate individuals when used irresponsibly, and it significantly shaped today’s regulatory landscape. [`5`]
+
+Given this history, any system that evaluates or ranks people—particularly in employment—must uphold **strict transparency, human oversight, and narrow scope**. In this prototype, all AI outputs are intended purely as **assistive signals**. The system must **never** be used to autonomously approve, reject, or shortlist candidates.
+
+The **EU AI Act** classifies AI systems used for recruitment, CV screening, candidate ranking, promotion decisions, or termination as **High-Risk AI Systems** (Annex III). Such systems are permitted in the EU but must meet stringent requirements, including:
+
+- **Human oversight** with the ability to override AI suggestions  
+- **Transparency** about the model’s role and limitations  
+- **Detailed logging and traceability** of system behavior  
+- **Bias monitoring and risk management**  
+- **High-quality and relevant training data**  
+- **Clear separation** between AI scoring and final human judgment
+
+The Act also **prohibits** certain practices in hiring, such as emotion recognition in workplace settings, biometric inference of personality traits, and social-scoring-style ranking systems. [`6`, `7`, `8`]
+
+This prototype **does not** conduct emotion recognition, sensitive-trait inference, biometric profiling, or psychographic prediction. It is a technical experiment focused on agent orchestration, workflow automation, and context management—not an end-to-end HR decision engine.
+
+### **Human-in-the-Loop by Design**
+To remain aligned with ethical expectations and regulatory requirements, this system must always operate with:
+
+- **Human-in-the-Loop (HITL):** Recruiters make all decisions.  
+- **Explainability:** Agents produce structured rationales, not black-box judgments.  
+- **Data minimization:** Only job-relevant information is processed.  
+- **No profiling of protected traits:** No biometric, psychographic, or emotional inference.
+
+### **Project Status**
+This project remains a **research and demonstration artifact**, created to explore the technical viability of LLM-powered coordination between agents. It highlights what is technologically possible, but is **not a deployable HR solution** under the EU AI Act. Any real-world implementation would require extensive risk assessment, compliance measures, and human oversight to avoid replicating the harms demonstrated in past profiling scandals.
 
 ---
 
@@ -93,45 +118,60 @@ This project is an **experimental prototype** designed to demonstrate technical 
 
 8. [Clifford Chance — What Does the EU AI Act Mean for Employers?](https://www.cliffordchance.com/content/dam/cliffordchance/briefings/2024/08/what-does-the-eu-ai-act-mean-for-employers.pdf)
 
-## **System Architecture**
 
-1. **User Interfaces (Gradio)**: Serves both **HR Managers** (Supervisor Chat & Management) and **Candidates** (CV Upload & Voice Interface).
-2. **Supervisor Agent**: The main planner that orchestrates the process by delegating to:
-   - **DB Executor**: Handles data queries/updates via code execution.
-   - **CV & Voice Screeners**: Specialized agents for assessment.
-   - **Gmail & Calendar Agents**: Manage communication and scheduling.
-3. **MCP Servers**: Connect the Gmail and Calendar agents to external Google APIs.
-4. **Database**: Central storage for candidate profiles and recruitment state.
 
-![System Architecture](./architecture.png)
+## ***`Quick Start: Run Application`***
+To spin up the entire platform including the database, agents, and UI dashboards, we use **Docker Compose**.
+
+### ***Services & Ports***
+| Service | Description | Host Port | Container Port |
+|---------|-------------|-----------|----------------|
+| `db` | PostgreSQL 15 database with persistent storage | **5433** | 5432 |
+| `cv_upload_streamlit` | UI for uploading CVs | **8501** | 8501 |
+| `voice_screening_streamlit` | UI for voice screening candidates | **8502** | 8501 |
+| `supervisor_ui` | Main Chat UI for the Supervisor Agent | **8503** | 8501 |
+| `websocket_proxy` | Proxy for OpenAI Realtime API | **8000** | 8000 |
+
+### ***Infrastructure & Secrets***
+This project requires Google Cloud credentials for the Gmail and Calendar agents.
+
+- **Secrets:** Google tokens and credentials must be present in the `secrets/` directory.
+- **Infrastructure:** You can provision the necessary GCP infrastructure using the code in `terraform/` or the scripts in `scripts/infra/`.
+- **Documentation:** For detailed setup instructions, refer to the [MCP Docs](docs/mcp/).
+
+### ***Run Command***
+1. **Configure Environment:**
+   Copy the example environment file and fill in your API keys:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Start Services:**
+   ```bash
+   docker compose --env-file .env -f docker/docker-compose.yml up --build
+   ```
+
+### 🧹 Resetting the Environment
+If you need a clean slate (e.g., after modifying DB models):
+```bash
+# 1. Stop containers
+docker compose -f docker/docker-compose.yml down
+
+# 2. Remove persistent DB volume
+docker volume rm docker_postgres_data
+
+# 3. Rebuild & Start
+docker compose --env-file .env -f docker/docker-compose.yml up --build
+```
+
+---
 
 ## ***`Application Flow & Entry Points`***
 
 The platform orchestrates a complete recruitment pipeline, interacting with both Candidates and the HR Supervisor.
 
-
-
 ### 1. The Recruitment Lifecycle
-
-The candidate application flow follows these key stages:
-
-1. **Application Submission**: Candidate applies; status set to `applied`.
-2. **CV Screening**: AI analyzes CV (`cv_screened`) and evaluates it (`cv_passed` or `cv_rejected`).
-3. **Voice Invitation**: Qualified candidates receive an email with an auth code for the AI voice interview (`voice_invitation_sent`).
-4. **Voice Screening**: Candidate completes the AI interview (`voice_done`); AI judge evaluates performance (`voice_passed` or `voice_rejected`).
-5. **Human Interview Scheduling**: Successful candidates are offered available time slots for a person-to-person interview based on HR calendar availability.
-6. **Confirmation**: Interview is scheduled (`interview_scheduled`) upon candidate's response.
-7. **Final Decision**: HR makes a decision (`hired` or `rejected`), and the outcome is communicated to the candidate. 
-
-### 2. User Entry Points
-
-| User | Interface | Description |
-| :--- | :--- | :--- |
-| **HR Manager** | **Supervisor UI** | **The Command Center.** Chat with the Supervisor Agent to manage the pipeline, review candidates, query the DB, and schedule interviews. |
-| **Candidate** | **CV Portal** | Public-facing portal for candidates to register and upload their resumes to the system. |
-| **Candidate** | **Voice Portal** | AI-conducted voice interview interface. Candidates access this only after passing CV screening and receiving an invite. |
-
-The interaction between these entry points and the agentic workflow is visualized in the state machine below:
+The system tracks candidates through a defined state machine (see `src/backend/state/candidate.py` for the `CandidateStatus` enum).
 
 ```mermaid
 graph TD
@@ -175,6 +215,14 @@ graph TD
     style Decision fill:#f3e5f5,stroke:#7b1fa2
 ```
 
+### 2. User Entry Points
+
+| User | Interface | Port | Description |
+| :--- | :--- | :--- | :--- |
+| **HR Manager** | **Supervisor UI** | `8503` | **The Command Center.** Chat with the Supervisor Agent to manage the pipeline, review candidates, query the DB, and schedule interviews. |
+| **Candidate** | **CV Portal** | `8501` | Public-facing portal for candidates to register and upload their resumes to the system. |
+| **Candidate** | **Voice Portal** | `8502` | AI-conducted voice interview interface. Candidates access this only after passing CV screening and receiving an invite. |
+
 ---
 
 ## ***`AI Engineering Principles`***
@@ -183,7 +231,7 @@ graph TD
 
 To improve the reliability of complex evaluations (such as CV scoring and Voice Interview judging), we enforce **Chain-of-Thought (CoT)** reasoning within our structured outputs, inspired by [Wei et al. (2022)](https://arxiv.org/abs/2201.11903).
 
-By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/agents/cv_screening/schemas/output_schema.py`), where field order matters:
+By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/backend/agents/cv_screening/schemas/output_schema.py`), where field order matters:
 
 ```mermaid
 flowchart LR
@@ -314,14 +362,14 @@ A breakdown of the various LLMs, Agents, and Workflows powering the system.
 
 | Component | Type | Model | Description | Location |
 | :--- | :--- | :--- | :--- | :--- |
-| **Supervisor Agent** | 🤖 **Agent** | `gpt-4o` | Orchestrates delegation, planning, and context management. | `src/agents/supervisor/supervisor_v2.py` |
-| **Gmail Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous email management via MCP (read/send/label). | `src/agents/gmail/gmail_agent.py` |
-| **GCalendar Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous calendar scheduling via MCP. | `src/agents/gcalendar/gcalendar_agent.py` |
-| **DB Executor** | 🤖 **Agent** | `gpt-4o` | Writes SQL/Python to query the database (CodeAct). | `src/agents/db_executor/db_executor.py` |
-| **CV Screening** | ⚙️ **Workflow** | `gpt-4o` | Deterministic pipeline: Fetch → Read → Evaluate → Save. | `src/agents/cv_screening/cv_screening_workflow.py` |
-| **Voice Judge** | 🧠 **Simple LLM** | `gpt-4o-audio` | Evaluates audio/transcripts for sentiment & confidence. | `src/agents/voice_screening/judge.py` |
-| **Doc Parser** | 🧠 **Simple LLM** | `gpt-4o-mini` | Vision-based PDF-to-Markdown conversion. | `src/doc_parser/pdf_to_markdown.py` |
-| **History Manager** | 🧠 **Simple LLM** | `gpt-4o-mini` | Summarizes conversation history for context compaction. | `src/context_eng/history_manager.py` |
+| **Supervisor Agent** | 🤖 **Agent** | `gpt-4o` | Orchestrates delegation, planning, and context management. | `src/backend/agents/supervisor/supervisor_v2.py` |
+| **Gmail Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous email management via MCP (read/send/label). | `src/backend/agents/gmail/gmail_agent.py` |
+| **GCalendar Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous calendar scheduling via MCP. | `src/backend/agents/gcalendar/gcalendar_agent.py` |
+| **DB Executor** | 🤖 **Agent** | `gpt-4o` | Writes SQL/Python to query the database (CodeAct). | `src/backend/agents/db_executor/db_executor.py` |
+| **CV Screening** | ⚙️ **Workflow** | `gpt-4o` | Deterministic pipeline: Fetch → Read → Evaluate → Save. | `src/backend/agents/cv_screening/cv_screening_workflow.py` |
+| **Voice Judge** | 🧠 **Simple LLM** | `gpt-4o-audio` | Evaluates audio/transcripts for sentiment & confidence. | `src/backend/agents/voice_screening/judge.py` |
+| **Doc Parser** | 🧠 **Simple LLM** | `gpt-4o-mini` | Vision-based PDF-to-Markdown conversion. | `src/backend/doc_parser/pdf_to_markdown.py` |
+| **History Manager** | 🧠 **Simple LLM** | `gpt-4o-mini` | Summarizes conversation history for context compaction. | `src/backend/context_eng/history_manager.py` |
 
 ### 🔌 ***`Integrated MCP Servers`***
 The system integrates **Model Context Protocol (MCP)** servers to securely and standardizedly connect agents to external tools.
