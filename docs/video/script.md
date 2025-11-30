@@ -10,6 +10,7 @@ Manually create:
    - Status: `voice_passed` (Ready for final interview)
    - Includes fake CV and Voice Screening results for the agent to analyze.
 
+
 ## Demo Flow
 
 ### 1. The New Applicant & Morning Check-in
@@ -25,7 +26,7 @@ Hi! Can you give me a summary of the current recruitment status? Who are the act
 
 ---
 
-### 2. CV Screening (PERSON X)
+### 2. CV Screening
 *Goal: Demonstrate the CV screening workflow.*
 
 **Query 2:**
@@ -42,12 +43,12 @@ Send him an email invitation for the voice screening!
 
 ---
 
-### 3. Reviewing the Advanced Candidate (PERSON Y)
+### 3. Reviewing the Candidate
 *Goal: Show the "Voice Judge" results and Calendar/Email integration.*
 
 **Query 4:**
 ```text
-Now let's look at PERSON Y. I see she/he completed the voice screening. Can you analyze her interview transcript and tell me how she performed?
+I see she/he completed the voice screening. Can you analyze her interview transcript and tell me how she performed?
 ```
 
 *(Expected Response: Agent reads the voice analysis/judge score and summarizes the candidate's strengths/weaknesses.)*
@@ -64,5 +65,5 @@ That sounds promising. Let's move her to the final stage. Please schedule a pers
 
 **Query 6:**
 ```text
-Thanks! Can you show me the updated pipeline status for both PERSON X and PERSON Y?
+Thanks! Can you show me the updated pipeline status?
 ```
