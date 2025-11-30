@@ -22,8 +22,8 @@ from dotenv import load_dotenv
 from sqlalchemy import select
 
 # Import database client and models
-from src.database.candidates.client import SessionLocal
-from src.database.candidates.models import Candidate
+from src.backend.database.candidates.client import SessionLocal
+from src.backend.database.candidates.models import Candidate
 
 load_dotenv()
 

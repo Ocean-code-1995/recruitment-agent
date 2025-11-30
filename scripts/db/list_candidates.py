@@ -10,8 +10,8 @@ from sqlalchemy.exc import ProgrammingError
 # Ensure project root is in path
 import scripts.db  # noqa: F401
 
-from src.database.candidates.client import SessionLocal
-from src.database.candidates.models import Candidate
+from src.backend.database.candidates.client import SessionLocal
+from src.backend.database.candidates.models import Candidate
 
 
 def list_candidates(limit: int = 10) -> bool:
@@ -41,7 +41,17 @@ def list_candidates(limit: int = 10) -> bool:
                 .all()
             )
             for c in candidates:
-                print(f" - {c.full_name} | {c.email} | Status: {c.status}")
+                print(f" - ID: {c.id}")
+                print(f"   Full Name: {c.full_name}")
+                print(f"   Email: {c.email}")
+                print(f"   Phone: {c.phone_number}")
+                print(f"   CV Path: {c.cv_file_path}")
+                print(f"   Parsed CV Path: {c.parsed_cv_file_path}")
+                print(f"   Status: {c.status}")
+                print(f"   Auth Code: {c.auth_code}")
+                print(f"   Created At: {c.created_at}")
+                print(f"   Updated At: {c.updated_at}")
+                print("-" * 40)
         
         return True
 

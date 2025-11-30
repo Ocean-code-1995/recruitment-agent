@@ -171,7 +171,7 @@ docker compose --env-file .env -f docker/docker-compose.yml up --build
 The platform orchestrates a complete recruitment pipeline, interacting with both Candidates and the HR Supervisor.
 
 ### 1. The Recruitment Lifecycle
-The system tracks candidates through a defined state machine (see `src/state/candidate.py` for the `CandidateStatus` enum).
+The system tracks candidates through a defined state machine (see `src/backend/state/candidate.py` for the `CandidateStatus` enum).
 
 ```mermaid
 graph TD
@@ -231,7 +231,7 @@ graph TD
 
 To improve the reliability of complex evaluations (such as CV scoring and Voice Interview judging), we enforce **Chain-of-Thought (CoT)** reasoning within our structured outputs, inspired by [Wei et al. (2022)](https://arxiv.org/abs/2201.11903).
 
-By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/agents/cv_screening/schemas/output_schema.py`), where field order matters:
+By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/backend/agents/cv_screening/schemas/output_schema.py`), where field order matters:
 
 ```mermaid
 flowchart LR
@@ -362,14 +362,14 @@ A breakdown of the various LLMs, Agents, and Workflows powering the system.
 
 | Component | Type | Model | Description | Location |
 | :--- | :--- | :--- | :--- | :--- |
-| **Supervisor Agent** | 🤖 **Agent** | `gpt-4o` | Orchestrates delegation, planning, and context management. | `src/agents/supervisor/supervisor_v2.py` |
-| **Gmail Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous email management via MCP (read/send/label). | `src/agents/gmail/gmail_agent.py` |
-| **GCalendar Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous calendar scheduling via MCP. | `src/agents/gcalendar/gcalendar_agent.py` |
-| **DB Executor** | 🤖 **Agent** | `gpt-4o` | Writes SQL/Python to query the database (CodeAct). | `src/agents/db_executor/db_executor.py` |
-| **CV Screening** | ⚙️ **Workflow** | `gpt-4o` | Deterministic pipeline: Fetch → Read → Evaluate → Save. | `src/agents/cv_screening/cv_screening_workflow.py` |
-| **Voice Judge** | 🧠 **Simple LLM** | `gpt-4o-audio` | Evaluates audio/transcripts for sentiment & confidence. | `src/agents/voice_screening/judge.py` |
-| **Doc Parser** | 🧠 **Simple LLM** | `gpt-4o-mini` | Vision-based PDF-to-Markdown conversion. | `src/doc_parser/pdf_to_markdown.py` |
-| **History Manager** | 🧠 **Simple LLM** | `gpt-4o-mini` | Summarizes conversation history for context compaction. | `src/context_eng/history_manager.py` |
+| **Supervisor Agent** | 🤖 **Agent** | `gpt-4o` | Orchestrates delegation, planning, and context management. | `src/backend/agents/supervisor/supervisor_v2.py` |
+| **Gmail Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous email management via MCP (read/send/label). | `src/backend/agents/gmail/gmail_agent.py` |
+| **GCalendar Agent** | 🤖 **Agent** | `gpt-4o` | Autonomous calendar scheduling via MCP. | `src/backend/agents/gcalendar/gcalendar_agent.py` |
+| **DB Executor** | 🤖 **Agent** | `gpt-4o` | Writes SQL/Python to query the database (CodeAct). | `src/backend/agents/db_executor/db_executor.py` |
+| **CV Screening** | ⚙️ **Workflow** | `gpt-4o` | Deterministic pipeline: Fetch → Read → Evaluate → Save. | `src/backend/agents/cv_screening/cv_screening_workflow.py` |
+| **Voice Judge** | 🧠 **Simple LLM** | `gpt-4o-audio` | Evaluates audio/transcripts for sentiment & confidence. | `src/backend/agents/voice_screening/judge.py` |
+| **Doc Parser** | 🧠 **Simple LLM** | `gpt-4o-mini` | Vision-based PDF-to-Markdown conversion. | `src/backend/doc_parser/pdf_to_markdown.py` |
+| **History Manager** | 🧠 **Simple LLM** | `gpt-4o-mini` | Summarizes conversation history for context compaction. | `src/backend/context_eng/history_manager.py` |
 
 ### 🔌 ***`Integrated MCP Servers`***
 The system integrates **Model Context Protocol (MCP)** servers to securely and standardizedly connect agents to external tools.
