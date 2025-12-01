@@ -173,47 +173,7 @@ The platform orchestrates a complete recruitment pipeline, interacting with both
 ### 1. The Recruitment Lifecycle
 The system tracks candidates through a defined state machine (see `src/backend/state/candidate.py` for the `CandidateStatus` enum).
 
-```mermaid
-graph TD
-    %% Actors
-    Candidate((Candidate))
-    HR((HR Supervisor))
-
-    %% System Components (Nodes)
-    CV_UI[CV Portal UI]
-    CV_Screen{CV Screening AI}
-    Voice_UI[Voice Portal UI]
-    Voice_Judge{Voice Judge AI}
-    Interview[Person-to-Person Interview]
-    Decision{Final Decision}
-
-    %% Flow & Actions (Edges)
-    Candidate -->|1. Uploads CV| CV_UI
-    CV_UI -->|2. Triggers Analysis| CV_Screen
-    
-    CV_Screen -->|Pass: Sends Invite| Voice_UI
-    CV_Screen -->|Fail: Notify| Rejected((Rejected))
-
-    Voice_UI -->|3. Conducts Interview| Candidate
-    Candidate -->|4. Completes Session| Voice_Judge
-    
-    Voice_Judge -->|Pass: Schedule| Interview
-    Voice_Judge -->|Fail: Notify| Rejected
-
-    Interview -->|5. Feedback| HR
-    HR -->|6. Updates Status| Decision
-    
-    Decision -->|Hire| Hired((Hired))
-    Decision -->|Reject| Rejected
-
-    %% Styling
-    style CV_UI fill:#e3f2fd,stroke:#1565c0
-    style Voice_UI fill:#e3f2fd,stroke:#1565c0
-    style CV_Screen fill:#fff3e0,stroke:#ef6c00
-    style Voice_Judge fill:#fff3e0,stroke:#ef6c00
-    style Interview fill:#e8f5e9,stroke:#2e7d32
-    style Decision fill:#f3e5f5,stroke:#7b1fa2
-```
+![Application Flow](./pics/application_flow.png)
 
 ### 2. User Entry Points
 
@@ -233,25 +193,7 @@ To improve the reliability of complex evaluations (such as CV scoring and Voice 
 
 By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/backend/agents/cv_screening/schemas/output_schema.py`), where field order matters:
 
-```mermaid
-flowchart LR
-    %% Nodes
-    Input[Input Data]
-    subgraph "Structured Output Schema"
-        Feedback["1. Generate Feedback (CoT)"]
-        Score["2. Assign Scores"]
-    end
-    Output[Overall Score]
-
-    %% Flow
-    Input --> Feedback
-    Feedback --> Score
-    Score --> Output
-
-    %% Styling
-    style Feedback fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style Score fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-```
+![Prompt Engineering](./pics/prompt_eng.png)
 
 This simple structural constraint leads to significantly better calibration and reduced hallucination in scoring.
 
@@ -266,50 +208,7 @@ Instead of a single monolithic agent, tasks are delegated to **specialized sub-a
 - **Delegate (Solid Arrow):** The Supervisor initiates a task, passing only the necessary context to a specific sub-agent.
 - **Report Back (Dotted Arrow):** Once the sub-agent completes its task, it returns a structured summary to the Supervisor, ensuring the main context remains clean.
 
-```mermaid
-graph TD
-    %% Legend (Top)
-    subgraph Legend [Legend]
-        direction LR
-        KeySup[Supervisor] -->|Delegation| KeyAgent[Sub-Agent]
-        KeyAgent -.->|Report Back| KeySup
-    end
-
-    %% Force Legend to be above Supervisor
-    Legend ~~~ Supervisor
-
-    Supervisor[🤖 Supervisor Agent]
-
-    %% Sub-Agents
-    Gmail[📧 Gmail Agent]
-    Cal[📅 GCalendar Agent]
-    DBExec[💾 DB Executor]
-    CV[📄 CV Screener]
-    Voice[🎤 Voice Screener]
-
-    %% Delegation (Outbound)
-    Supervisor --> Gmail
-    Supervisor --> Cal
-    Supervisor --> DBExec
-    Supervisor --> CV
-    Supervisor --> Voice
-
-    %% Feedback (Inbound)
-    Gmail -.-> Supervisor
-    Cal -.-> Supervisor
-    DBExec -.-> Supervisor
-    CV -.-> Supervisor
-    Voice -.-> Supervisor
-
-    %% Styling
-    style Supervisor fill:#e1bee7,stroke:#4a148c,stroke-width:2px
-    style Gmail fill:#fff3e0,stroke:#e65100
-    style Cal fill:#fff3e0,stroke:#e65100
-    style DBExec fill:#fff3e0,stroke:#e65100
-    style CV fill:#e3f2fd,stroke:#1565c0
-    style Voice fill:#e3f2fd,stroke:#1565c0
-    style Legend fill:#f5f5f5,stroke:#9e9e9e,stroke-dasharray: 5 5
-```
+![Context Engineering - Isolation](./pics/context_eng.png)
 
 - **How it works:** Each *sub-agent* operates in its *own isolated context/thread*.
 - **Benefit:** The main Supervisor is not polluted with low-level execution logs. Sub-agents are **stateless** from the Supervisor's perspective—each trigger starts a fresh thread, preventing error accumulation in the workers.
@@ -326,31 +225,7 @@ For the **stateful Supervisor** (which manages the long-running user conversatio
 - **Mechanism:** As the conversation history exceeds a token threshold, older interactions are summarized into a concise narrative while recent messages are kept verbatim.
 - **Result:** The agent retains "long-term memory" of the conversation arc without hitting context window limits, keeping the Supervisor "forever young."
 
-```mermaid
-graph TD
-    User[User / API] -->|Long-running Thread| Supervisor
-    
-    subgraph "Stateful & Compacted"
-    Supervisor[Supervisor Agent]
-    Memory[Context Compaction Module] -.->|Summarizes History| Supervisor
-    end
-
-    subgraph "Stateless & Isolated"
-    CV[CV Screener]
-    Voice[Voice Screener]
-    end
-
-    subgraph "Context Offloading"
-    DB[(Postgres DB)]
-    end
-
-    Supervisor -->|Delegates Task| CV
-    Supervisor -->|Delegates Task| Voice
-    Supervisor -->|Queries/Updates| DB
-    
-    CV -.->|1. New Thread| CV
-    Voice -.->|1. New Thread| Voice
-```
+![Context Engineering - Compaction](./pics/context_eng_2.png)
 
 ## ***`Model & Agent Registry`***
 
