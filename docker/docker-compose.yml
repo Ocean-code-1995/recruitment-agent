@@ -43,17 +43,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Hey compose here is env file, 
+    # Using explicit environment variables instead of env_file to avoid port conflicts
+    # Hey compose here is env file,
     # pass it to container, but not the .env itself
     env_file:
       - ../.env
     environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      # Explicitly set POSTGRES_HOST to the service name 'db' for Docker networking
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    command: ["python", "-m", "src.database.candidates.client"]
+    command: ["python", "-m", "src.backend.database.candidates.init_db"]
 
     volumes:
       # --- Local code mount (for development only) ---
@@ -86,7 +88,8 @@ services:
       # Mount local code for live updates
       - ../:/app
       # Shared volume for CV uploads (persistent)
-      - ../src/database/cvs:/app/src/database/cvs
+      - ../src/backend/database/cvs:/app/src/backend/database/cvs
+    command: ["streamlit", "run", "src/frontend/streamlit/cv_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
 
@@ -106,16 +109,23 @@ services:
     environment:
       PYTHONPATH: /app
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      BACKEND_API_URL: http://supervisor_api:8080
+      # Database connection
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       # Mount local code for live updates
       - ../:/app
-    command: ["python", "-m", "uvicorn", "src.voice_screening_ui.proxy:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["python", "-m", "uvicorn", "src.frontend.streamlit.voice_screening_ui.proxy:app", "--host", "0.0.0.0", "--port", "8000"]
     networks:
       - hrnet
 
   # --- Voice Screening UI ---
-  voice_screening_streamlit:
-    container_name: voice_screening_streamlit
+  voice_screening_ui:
+    container_name: voice_screening_ui
     build:
       context: ..
       dockerfile: docker/Dockerfile.voice_screening
@@ -129,12 +139,42 @@ services:
     environment:
       DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
       PYTHONPATH: /app
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime  # Internal Docker network URL
+      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime
+      BACKEND_API_URL: http://supervisor_api:8080
     volumes:
       # Mount local code for live updates
       - ../:/app
-    command: ["streamlit", "run", "src/voice_screening_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    command: ["streamlit", "run", "src/frontend/streamlit/voice_screening_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    networks:
+      - hrnet
+
+  # --- Supervisor Agent API ---
+  supervisor_api:
+    container_name: supervisor_api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.supervisor_api
+    ports:
+      - "8080:8080"  # Map host port 8080 to container port 8080
+    depends_on:
+      - db
+    environment:
+      # We set POSTGRES_HOST to 'db' so the agent connects to the container internal network
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PYTHONPATH: /app
+      PROMPTLAYER_API_KEY: ${PROMPTLAYER_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WEBSOCKET_PROXY_URL: ws://websocket_proxy:8000/ws/realtime
+      CV_UPLOAD_PATH: /app/src/backend/database/cvs/uploads
+      CV_PARSED_PATH: /app/src/backend/database/cvs/parsed
+    volumes:
+      # Mount local code for live updates
+      - ../:/app
+    command: ["uvicorn", "src.backend.api.app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     networks:
       - hrnet
 
@@ -148,6 +188,7 @@ services:
       - "8503:8501"  # Map host port 8503 to container port 8501
     depends_on:
       - db
+      - supervisor_api
     env_file:
       - ../.env
     environment:
@@ -155,9 +196,12 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       PYTHONPATH: /app
+      # API URL for the Streamlit UI to connect to
+      SUPERVISOR_API_URL: http://supervisor_api:8080/api/v1/supervisor
     volumes:
       # Mount local code for live updates
       - ../:/app
+    command: ["streamlit", "run", "src/frontend/streamlit/supervisor_ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     networks:
       - hrnet
 

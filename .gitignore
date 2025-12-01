@@ -26,6 +26,7 @@ __pycache__/
 # data
 src/database/cvs/uploads
 src/database/cvs/parsed
+src/database/voice_recordings
 
 
 
@@ -67,3 +68,6 @@ src/database/cvs/tests/*.txt
 .langgraph_api/
 
 .idea/
+
+# any .wav files
+*.wav

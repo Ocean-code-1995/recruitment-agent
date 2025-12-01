@@ -1,0 +1,11 @@
+### 🧠 Position: AI Engineer  
+**Location:** Remote / Wiesbaden HQ  
+**About the Role:**  
+Join our AI R&D team to develop, fine-tune, and deploy ML models for production.  
+You will work on projects involving LLMs, LangGraph agents, and context engineering.  
+
+**Requirements:**  
+    - Proficiency in Python & modern AI frameworks (PyTorch, LangChain, etc.)  
+    - Solid understanding of NLP and ML pipelines  
+    - Experience deploying models or building intelligent systems  
+    - Strong communication and teamwork skills  

@@ -53,7 +53,7 @@ async def main():
             {
                 "role": "user",
                 "content": (
-                    "Create a calendar event for the coming Friday at 3pm titled "
+                    "Create a calendar event for 2. December 2025 at 3pm Berlin time, titled"
                     "'Kick-off of the Agent MCP Hackathon'."
                 ),
             },
