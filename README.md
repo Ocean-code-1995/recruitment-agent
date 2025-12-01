@@ -33,6 +33,7 @@
 - [Application Flow & Entry Points](#application-flow--entry-points)
   - [The Recruitment Lifecycle](#1-the-recruitment-lifecycle)
   - [User Entry Points](#2-user-entry-points)
+- [System Architecture](#system-architecture)
 - [AI Engineering Principles](#ai-engineering-principles)
   - [Prompt Engineering](#prompt-engineering)
   - [Context Engineering](#context-engineering)
@@ -222,6 +223,83 @@ graph TD
 | **HR Manager** | **Supervisor UI** | `8503` | **The Command Center.** Chat with the Supervisor Agent to manage the pipeline, review candidates, query the DB, and schedule interviews. |
 | **Candidate** | **CV Portal** | `8501` | Public-facing portal for candidates to register and upload their resumes to the system. |
 | **Candidate** | **Voice Portal** | `8502` | AI-conducted voice interview interface. Candidates access this only after passing CV screening and receiving an invite. |
+
+---
+
+## ***`System Architecture`***
+
+The system follows a hierarchical agent architecture where the Supervisor Agent orchestrates specialized sub-agents, which in turn interact with external services through MCP (Model Context Protocol) servers.
+
+```mermaid
+graph TD
+    %% Entry Point
+    HR_Entry[👤 HR Entry Point<br/>Supervisor UI<br/>Port 8503]
+    
+    %% Supervisor Layer
+    Supervisor[🤖 Supervisor Agent<br/>Orchestrator]
+    
+    %% Sub-Agents Layer
+    CV_Screen[📄 CV Screening Agent]
+    Voice_Screen[🎤 Voice Screening Agent]
+    Gmail_Agent[📧 Gmail Agent]
+    GCal_Agent[📅 GCalendar Agent]
+    
+    %% MCP Servers Layer
+    Gmail_MCP[🔌 Gmail MCP Server]
+    GCal_MCP[🔌 Calendar MCP Server]
+    
+    %% External APIs
+    Gmail_API[☁️ Google Cloud<br/>Gmail API]
+    GCal_API[☁️ Google Cloud<br/>Calendar API]
+    
+    %% Connections
+    HR_Entry -->|User Commands| Supervisor
+    
+    Supervisor -->|Delegates Tasks| CV_Screen
+    Supervisor -->|Delegates Tasks| Voice_Screen
+    Supervisor -->|Delegates Tasks| Gmail_Agent
+    Supervisor -->|Delegates Tasks| GCal_Agent
+    
+    Gmail_Agent -->|Uses Tools| Gmail_MCP
+    GCal_Agent -->|Uses Tools| GCal_MCP
+    
+    Gmail_MCP -->|API Calls| Gmail_API
+    GCal_MCP -->|API Calls| GCal_API
+    
+    %% Styling
+    style HR_Entry fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Supervisor fill:#e1bee7,stroke:#4a148c,stroke-width:3px
+    style CV_Screen fill:#fff3e0,stroke:#ef6c00
+    style Voice_Screen fill:#fff3e0,stroke:#ef6c00
+    style Gmail_Agent fill:#fff3e0,stroke:#ef6c00
+    style GCal_Agent fill:#fff3e0,stroke:#ef6c00
+    style Gmail_MCP fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style GCal_MCP fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style Gmail_API fill:#f5f5f5,stroke:#616161,stroke-width:2px
+    style GCal_API fill:#f5f5f5,stroke:#616161,stroke-width:2px
+```
+
+### **Architecture Layers**
+
+1. **Entry Point Layer:** The HR Supervisor interacts with the system through the Supervisor UI (Gradio interface on port 8503), which serves as the command center for managing the recruitment pipeline.
+
+2. **Orchestration Layer:** The Supervisor Agent receives user commands and orchestrates the workflow by delegating tasks to specialized sub-agents. It maintains conversation context and manages the overall recruitment state.
+
+3. **Sub-Agent Layer:** Specialized agents handle specific domains:
+   - **CV Screening Agent:** Evaluates candidate resumes and determines qualification
+   - **Voice Screening Agent:** Conducts and evaluates voice interviews
+   - **Gmail Agent:** Manages email communications (sending invites, notifications)
+   - **GCalendar Agent:** Handles interview scheduling and calendar management
+
+4. **MCP Server Layer:** Model Context Protocol servers provide standardized, secure interfaces between agents and external services:
+   - **Gmail MCP Server:** Exposes Gmail operations (list, read, send, label emails)
+   - **Calendar MCP Server:** Exposes calendar operations (list, create, update events)
+
+5. **External Services Layer:** Google Cloud APIs provide the underlying infrastructure:
+   - **Gmail API:** Handles all email operations
+   - **Calendar API:** Manages calendar events and scheduling
+
+This architecture ensures **separation of concerns**, **secure credential management** (MCP servers handle authentication), and **modular extensibility** (new agents or services can be added without modifying the core Supervisor).
 
 ---
 
