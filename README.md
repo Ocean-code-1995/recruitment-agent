@@ -180,7 +180,7 @@ The system tracks candidates through a defined state machine (see `src/backend/s
 graph TD
     %% Actors
     Candidate((Candidate))
-    HR((**HR Supervisor**))
+    HR((HR Supervisor))
 
     %% System Components (Nodes)
     CV_UI[CV Portal UI]
@@ -188,7 +188,7 @@ graph TD
     Voice_UI[Voice Portal UI]
     Voice_Judge{Voice Judge AI}
     Interview[Person-to-Person Interview]
-    Decision{***Human***: Final Decision}
+    Decision{Human: Final Decision}
 
     %% Flow & Actions (Edges)
     Candidate -->|1. Uploads CV| CV_UI
