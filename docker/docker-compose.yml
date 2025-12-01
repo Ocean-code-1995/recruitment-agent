@@ -11,7 +11,7 @@ services:
     container_name: agentic_hr_db
     restart: always
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,6 +24,8 @@ services:
     env_file:
       - ../.env
     environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -42,6 +44,10 @@ services:
       db:
         condition: service_healthy
     # Using explicit environment variables instead of env_file to avoid port conflicts
+    # Hey compose here is env file,
+    # pass it to container, but not the .env itself
+    env_file:
+      - ../.env
     environment:
       # Explicitly set POSTGRES_HOST to the service name 'db' for Docker networking
       POSTGRES_HOST: db
@@ -72,19 +78,12 @@ services:
       - "8501:8501"
     depends_on:
       - db
-      - supervisor_api
+    env_file:
+      - ../.env
     environment:
-      # Database connection
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      CV_UPLOAD_PATH: /app/src/backend/database/cvs/uploads
-      # App specific
-      CV_UPLOAD_API_URL: http://supervisor_api:8080/api/v1/cv
-      PYTHONPATH: /app
+    #  OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DATABASE_URL: postgresql://agentic_user:password123@db:5432/agentic_hr
+      CV_UPLOAD_PATH: /app/src/database/cvs/uploads
     volumes:
       # Mount local code for live updates
       - ../:/app
@@ -194,6 +193,8 @@ services:
       - ../.env
     environment:
       # We set POSTGRES_HOST to 'db' so the agent connects to the container internal network
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
       PYTHONPATH: /app
       # API URL for the Streamlit UI to connect to
       SUPERVISOR_API_URL: http://supervisor_api:8080/api/v1/supervisor
