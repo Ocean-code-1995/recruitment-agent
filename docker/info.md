@@ -19,6 +19,7 @@
 docker compose --env-file .env -f docker/docker-compose.yml up --build
 ```
 
+
 ---
 
 ### Resetting the Environment
@@ -29,11 +30,14 @@ To completely reset the environment and database:
 
 ```bash
 # 1. Stop running containers
-docker compose -f docker/docker-compose.yml down
+docker compose -f docker/docker-compose.yml down --remove-orphans
 
 # 2. Remove the persistent database volume
 docker volume rm docker_postgres_data
 
-# 3. Rebuild and start fresh
+# 3. Prune unused Docker resources (optional but recommended)
+docker system prune -f
+
+# 4. Rebuild and start fresh
 docker compose --env-file .env -f docker/docker-compose.yml up --build
 ```

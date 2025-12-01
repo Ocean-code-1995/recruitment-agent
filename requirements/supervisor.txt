@@ -8,4 +8,5 @@ langchain-community
 langchain-mcp-adapters
 streamlit
 rich
+requests
 
