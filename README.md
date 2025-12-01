@@ -183,16 +183,16 @@ graph TD
     HR((HR Supervisor))
 
     %% System Components (Nodes)
-    CV_UI[CV Portal]
-    CV_Screen{CV Screening}
-    Voice_UI[Voice Portal]
-    Voice_Judge{Voice Judge}
-    Interview[Interview]
-    Decision{Final Decision}
+    CV_UI[CV Portal UI]
+    CV_Screen{CV Screening AI}
+    Voice_UI[Voice Portal UI]
+    Voice_Judge{Voice Judge AI}
+    Interview[Person-to-Person Interview]
+    Decision{Human: Final Decision}
 
     %% Flow & Actions (Edges)
     Candidate -->|1. Uploads CV| CV_UI
-    HR -->|2. Triggers Screening| CV_Screen
+    HR -->|2. Triggers CV Screening<br/>via Chat Interface| CV_Screen
     CV_UI -.->|CV Available| HR
     
     CV_Screen -->|Pass: Sends Invite| Voice_UI
