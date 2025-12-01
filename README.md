@@ -174,11 +174,13 @@ The platform orchestrates a complete recruitment pipeline, interacting with both
 ### 1. The Recruitment Lifecycle
 The system tracks candidates through a defined state machine (see `src/backend/state/candidate.py` for the `CandidateStatus` enum).
 
+**Application Flow:** The recruitment process begins when a candidate uploads their CV through the public-facing CV Portal. The HR Manager can then trigger AI-powered CV screening via the chat interface (Supervisor UI), which evaluates the candidate's CV against the job description to assess qualifications, experience, and job fit. Candidates who pass this initial screening receive an invitation to participate in an AI-conducted voice interview via the Voice Portal. The voice interview is then evaluated by an AI judge that assesses communication skills, confidence, and job fit. Successful candidates proceed to a traditional person-to-person interview, where the HR Supervisor makes the final hiring decision. At each stage, candidates may be rejected and notified accordingly. This multi-stage filtering process ensures only the most qualified candidates reach the final interview stage, significantly reducing the administrative burden on HR teams.
+
 ```mermaid
 graph TD
     %% Actors
     Candidate((Candidate))
-    HR((HR Supervisor))
+    HR((**HR Supervisor**))
 
     %% System Components (Nodes)
     CV_UI[CV Portal UI]
@@ -186,23 +188,24 @@ graph TD
     Voice_UI[Voice Portal UI]
     Voice_Judge{Voice Judge AI}
     Interview[Person-to-Person Interview]
-    Decision{Final Decision}
+    Decision{***Human***: Final Decision}
 
     %% Flow & Actions (Edges)
     Candidate -->|1. Uploads CV| CV_UI
-    CV_UI -->|2. Triggers Analysis| CV_Screen
+    HR -->|2. Triggers CV Screening<br/>via Chat Interface| CV_Screen
+    CV_UI -.->|CV Available| HR
     
     CV_Screen -->|Pass: Sends Invite| Voice_UI
     CV_Screen -->|Fail: Notify| Rejected((Rejected))
 
-    Voice_UI -->|3. Conducts Interview| Candidate
-    Candidate -->|4. Completes Session| Voice_Judge
+    Voice_UI -->|4. Conducts Interview| Candidate
+    Candidate -->|5. Completes Session| Voice_Judge
     
     Voice_Judge -->|Pass: Schedule| Interview
     Voice_Judge -->|Fail: Notify| Rejected
 
-    Interview -->|5. Feedback| HR
-    HR -->|6. Updates Status| Decision
+    Interview -->|6. Feedback| HR
+    HR -->|7. Updates Status| Decision
     
     Decision -->|Hire| Hired((Hired))
     Decision -->|Reject| Rejected
