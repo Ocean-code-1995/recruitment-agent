@@ -1,0 +1,19 @@
+flowchart LR
+    %% Nodes
+    Input[Input Data]
+    subgraph "Structured Output Schema"
+        Feedback["1. Generate Feedback (CoT)"]
+        Score["2. Assign Scores"]
+    end
+    Output[Overall Score]
+
+    %% Flow
+    Input --> Feedback
+    Feedback --> Score
+    Score --> Output
+
+    %% Styling
+    style Feedback fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style Score fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+
+

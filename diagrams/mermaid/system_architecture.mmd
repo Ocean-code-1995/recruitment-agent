@@ -1,0 +1,48 @@
+graph TD
+    %% Entry Point
+    HR_Entry[👤 HR Entry Point<br/>Supervisor UI<br/>Port 8503]
+    
+    %% Supervisor Layer
+    Supervisor[🤖 Supervisor Agent<br/>Orchestrator]
+    
+    %% Sub-Agents Layer
+    CV_Screen[📄 CV Screening Agent]
+    Voice_Screen[🎤 Voice Screening Agent]
+    Gmail_Agent[📧 Gmail Agent]
+    GCal_Agent[📅 GCalendar Agent]
+    
+    %% MCP Servers Layer
+    Gmail_MCP[🔌 Gmail MCP Server]
+    GCal_MCP[🔌 Calendar MCP Server]
+    
+    %% External APIs
+    Gmail_API[☁️ Google Cloud<br/>Gmail API]
+    GCal_API[☁️ Google Cloud<br/>Calendar API]
+    
+    %% Connections
+    HR_Entry -->|User Commands| Supervisor
+    
+    Supervisor -->|Delegates Tasks| CV_Screen
+    Supervisor -->|Delegates Tasks| Voice_Screen
+    Supervisor -->|Delegates Tasks| Gmail_Agent
+    Supervisor -->|Delegates Tasks| GCal_Agent
+    
+    Gmail_Agent -->|Uses Tools| Gmail_MCP
+    GCal_Agent -->|Uses Tools| GCal_MCP
+    
+    Gmail_MCP -->|API Calls| Gmail_API
+    GCal_MCP -->|API Calls| GCal_API
+    
+    %% Styling
+    style HR_Entry fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Supervisor fill:#e1bee7,stroke:#4a148c,stroke-width:3px
+    style CV_Screen fill:#fff3e0,stroke:#ef6c00
+    style Voice_Screen fill:#fff3e0,stroke:#ef6c00
+    style Gmail_Agent fill:#fff3e0,stroke:#ef6c00
+    style GCal_Agent fill:#fff3e0,stroke:#ef6c00
+    style Gmail_MCP fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style GCal_MCP fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style Gmail_API fill:#f5f5f5,stroke:#616161,stroke-width:2px
+    style GCal_API fill:#f5f5f5,stroke:#616161,stroke-width:2px
+
+

@@ -1,0 +1,38 @@
+graph TB
+    Candidate((Candidate))
+    HR((HR Supervisor))
+
+    CV_UI[CV<br/>Portal<br/>UI]
+    CV_Screen{CV<br/>Screening<br/>AI}
+    Voice_UI[Voice<br/>Portal<br/>UI]
+    Voice_Judge{Voice<br/>Judge<br/>AI}
+    Interview[Person-to-Person<br/>Interview]
+    Decision{Human:<br/>Final Decision}
+
+    Candidate -->|1. Uploads CV| CV_UI
+    HR -->|2. Triggers<br/>Screening| CV_Screen
+    CV_UI -.->|CV Available| HR
+    
+    CV_Screen -->|Pass: Invite| Voice_UI
+    CV_Screen -->|Fail: Notify| Rejected((Rejected))
+
+    Voice_UI -->|4. Conducts<br/>Interview| Candidate
+    Candidate -->|5. Completes| Voice_Judge
+    
+    Voice_Judge -->|Pass: Schedule| Interview
+    Voice_Judge -->|Fail: Notify| Rejected
+
+    Interview -->|6. Feedback| HR
+    HR -->|7. Updates| Decision
+    
+    Decision -->|Hire| Hired((Hired))
+    Decision -->|Reject| Rejected
+
+    style CV_UI fill:#e3f2fd,stroke:#1565c0
+    style Voice_UI fill:#e3f2fd,stroke:#1565c0
+    style CV_Screen fill:#fff3e0,stroke:#ef6c00
+    style Voice_Judge fill:#fff3e0,stroke:#ef6c00
+    style Interview fill:#e8f5e9,stroke:#2e7d32
+    style Decision fill:#f3e5f5,stroke:#7b1fa2
+
+

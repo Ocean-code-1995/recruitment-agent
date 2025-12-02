@@ -1,0 +1,25 @@
+graph TD
+    User[User / API] -->|Long-running Thread| Supervisor
+    
+    subgraph "Stateful & Compacted"
+    Supervisor[Supervisor Agent]
+    Memory[Context Compaction Module] -.->|Summarizes History| Supervisor
+    end
+
+    subgraph "Stateless & Isolated"
+    CV[CV Screener]
+    Voice[Voice Screener]
+    end
+
+    subgraph "Context Offloading"
+    DB[(Postgres DB)]
+    end
+
+    Supervisor -->|Delegates Task| CV
+    Supervisor -->|Delegates Task| Voice
+    Supervisor -->|Queries/Updates| DB
+    
+    CV -.->|1. New Thread| CV
+    Voice -.->|1. New Thread| Voice
+
+
