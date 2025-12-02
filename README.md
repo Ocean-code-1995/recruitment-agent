@@ -176,45 +176,7 @@ The system tracks candidates through a defined state machine (see `src/backend/s
 
 **Application Flow:** The recruitment process begins when a candidate uploads their CV through the public-facing CV Portal. The HR Manager can then trigger AI-powered CV screening via the chat interface (Supervisor UI), which evaluates the candidate's CV against the job description to assess qualifications, experience, and job fit. Candidates who pass this initial screening receive an invitation to participate in an AI-conducted voice interview via the Voice Portal. The voice interview is then evaluated by an AI judge that assesses communication skills, confidence, and job fit. Successful candidates proceed to a traditional person-to-person interview, where the HR Supervisor makes the final hiring decision. At each stage, candidates may be rejected and notified accordingly. This multi-stage filtering process ensures only the most qualified candidates reach the final interview stage, significantly reducing the administrative burden on HR teams.
 
-```mermaid
-graph TB
-    Candidate((Candidate))
-    HR((HR Supervisor))
-
-    CV_UI[CV<br/>Portal<br/>UI]
-    CV_Screen{CV<br/>Screening<br/>AI}
-    Voice_UI[Voice<br/>Portal<br/>UI]
-    Voice_Judge{Voice<br/>Judge<br/>AI}
-    Interview[Person-to-Person<br/>Interview]
-    Decision{Human:<br/>Final Decision}
-
-    Candidate -->|1. Uploads CV| CV_UI
-    HR -->|2. Triggers<br/>Screening| CV_Screen
-    CV_UI -.->|CV Available| HR
-    
-    CV_Screen -->|Pass: Invite| Voice_UI
-    CV_Screen -->|Fail: Notify| Rejected((Rejected))
-
-    Voice_UI -->|4. Conducts<br/>Interview| Candidate
-    Candidate -->|5. Completes| Voice_Judge
-    
-    Voice_Judge -->|Pass: Schedule| Interview
-    Voice_Judge -->|Fail: Notify| Rejected
-
-    Interview -->|6. Feedback| HR
-    HR -->|7. Updates| Decision
-    
-    Decision -->|Hire| Hired((Hired))
-    Decision -->|Reject| Rejected
-
-    style CV_UI fill:#e3f2fd,stroke:#1565c0
-    style Voice_UI fill:#e3f2fd,stroke:#1565c0
-    style CV_Screen fill:#fff3e0,stroke:#ef6c00
-    style Voice_Judge fill:#fff3e0,stroke:#ef6c00
-    style Interview fill:#e8f5e9,stroke:#2e7d32
-    style Decision fill:#f3e5f5,stroke:#7b1fa2
-
-```
+![Application Flow](diagrams/svg/recruitment_lifecycle.svg)
 
 ### 2. User Entry Points
 
@@ -230,54 +192,7 @@ graph TB
 
 The system follows a hierarchical agent architecture where the Supervisor Agent orchestrates specialized sub-agents, which in turn interact with external services through MCP (Model Context Protocol) servers.
 
-```mermaid
-graph TD
-    %% Entry Point
-    HR_Entry[👤 HR Entry Point<br/>Supervisor UI<br/>Port 8503]
-    
-    %% Supervisor Layer
-    Supervisor[🤖 Supervisor Agent<br/>Orchestrator]
-    
-    %% Sub-Agents Layer
-    CV_Screen[📄 CV Screening Agent]
-    Voice_Screen[🎤 Voice Screening Agent]
-    Gmail_Agent[📧 Gmail Agent]
-    GCal_Agent[📅 GCalendar Agent]
-    
-    %% MCP Servers Layer
-    Gmail_MCP[🔌 Gmail MCP Server]
-    GCal_MCP[🔌 Calendar MCP Server]
-    
-    %% External APIs
-    Gmail_API[☁️ Google Cloud<br/>Gmail API]
-    GCal_API[☁️ Google Cloud<br/>Calendar API]
-    
-    %% Connections
-    HR_Entry -->|User Commands| Supervisor
-    
-    Supervisor -->|Delegates Tasks| CV_Screen
-    Supervisor -->|Delegates Tasks| Voice_Screen
-    Supervisor -->|Delegates Tasks| Gmail_Agent
-    Supervisor -->|Delegates Tasks| GCal_Agent
-    
-    Gmail_Agent -->|Uses Tools| Gmail_MCP
-    GCal_Agent -->|Uses Tools| GCal_MCP
-    
-    Gmail_MCP -->|API Calls| Gmail_API
-    GCal_MCP -->|API Calls| GCal_API
-    
-    %% Styling
-    style HR_Entry fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    style Supervisor fill:#e1bee7,stroke:#4a148c,stroke-width:3px
-    style CV_Screen fill:#fff3e0,stroke:#ef6c00
-    style Voice_Screen fill:#fff3e0,stroke:#ef6c00
-    style Gmail_Agent fill:#fff3e0,stroke:#ef6c00
-    style GCal_Agent fill:#fff3e0,stroke:#ef6c00
-    style Gmail_MCP fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    style GCal_MCP fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    style Gmail_API fill:#f5f5f5,stroke:#616161,stroke-width:2px
-    style GCal_API fill:#f5f5f5,stroke:#616161,stroke-width:2px
-```
+![System Architecture](diagrams/svg/system_architecture.svg)
 
 ### **Architecture Layers**
 
@@ -311,25 +226,7 @@ To improve the reliability of complex evaluations (such as CV scoring and Voice 
 
 By requiring the model to generate a textual explanation *before* assigning numerical scores, we ensure the model "thinks" through the evidence before committing to a decision. This is implemented directly in our Pydantic schemas (e.g., `src/backend/agents/cv_screening/schemas/output_schema.py`), where field order matters:
 
-```mermaid
-flowchart LR
-    %% Nodes
-    Input[Input Data]
-    subgraph "Structured Output Schema"
-        Feedback["1. Generate Feedback (CoT)"]
-        Score["2. Assign Scores"]
-    end
-    Output[Overall Score]
-
-    %% Flow
-    Input --> Feedback
-    Feedback --> Score
-    Score --> Output
-
-    %% Styling
-    style Feedback fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style Score fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-```
+![Prompt Engineering Flow](diagrams/svg/prompt_engineering_flow.svg)
 
 This simple structural constraint leads to significantly better calibration and reduced hallucination in scoring.
 
@@ -344,50 +241,7 @@ Instead of a single monolithic agent, tasks are delegated to **specialized sub-a
 - **Delegate (Solid Arrow):** The Supervisor initiates a task, passing only the necessary context to a specific sub-agent.
 - **Report Back (Dotted Arrow):** Once the sub-agent completes its task, it returns a structured summary to the Supervisor, ensuring the main context remains clean.
 
-```mermaid
-graph TD
-    %% Legend (Top)
-    subgraph Legend [Legend]
-        direction LR
-        KeySup[Supervisor] -->|Delegation| KeyAgent[Sub-Agent]
-        KeyAgent -.->|Report Back| KeySup
-    end
-
-    %% Force Legend to be above Supervisor
-    Legend ~~~ Supervisor
-
-    Supervisor[🤖 Supervisor Agent]
-
-    %% Sub-Agents
-    Gmail[📧 Gmail Agent]
-    Cal[📅 GCalendar Agent]
-    DBExec[💾 DB Executor]
-    CV[📄 CV Screener]
-    Voice[🎤 Voice Screener]
-
-    %% Delegation (Outbound)
-    Supervisor --> Gmail
-    Supervisor --> Cal
-    Supervisor --> DBExec
-    Supervisor --> CV
-    Supervisor --> Voice
-
-    %% Feedback (Inbound)
-    Gmail -.-> Supervisor
-    Cal -.-> Supervisor
-    DBExec -.-> Supervisor
-    CV -.-> Supervisor
-    Voice -.-> Supervisor
-
-    %% Styling
-    style Supervisor fill:#e1bee7,stroke:#4a148c,stroke-width:2px
-    style Gmail fill:#fff3e0,stroke:#e65100
-    style Cal fill:#fff3e0,stroke:#e65100
-    style DBExec fill:#fff3e0,stroke:#e65100
-    style CV fill:#e3f2fd,stroke:#1565c0
-    style Voice fill:#e3f2fd,stroke:#1565c0
-    style Legend fill:#f5f5f5,stroke:#9e9e9e,stroke-dasharray: 5 5
-```
+![Context Isolation via Delegation](diagrams/svg/context_isolation_delegation.svg)
 
 - **How it works:** Each *sub-agent* operates in its *own isolated context/thread*.
 - **Benefit:** The main Supervisor is not polluted with low-level execution logs. Sub-agents are **stateless** from the Supervisor's perspective—each trigger starts a fresh thread, preventing error accumulation in the workers.
@@ -404,31 +258,7 @@ For the **stateful Supervisor** (which manages the long-running user conversatio
 - **Mechanism:** As the conversation history exceeds a token threshold, older interactions are summarized into a concise narrative while recent messages are kept verbatim.
 - **Result:** The agent retains "long-term memory" of the conversation arc without hitting context window limits, keeping the Supervisor "forever young."
 
-```mermaid
-graph TD
-    User[User / API] -->|Long-running Thread| Supervisor
-    
-    subgraph "Stateful & Compacted"
-    Supervisor[Supervisor Agent]
-    Memory[Context Compaction Module] -.->|Summarizes History| Supervisor
-    end
-
-    subgraph "Stateless & Isolated"
-    CV[CV Screener]
-    Voice[Voice Screener]
-    end
-
-    subgraph "Context Offloading"
-    DB[(Postgres DB)]
-    end
-
-    Supervisor -->|Delegates Task| CV
-    Supervisor -->|Delegates Task| Voice
-    Supervisor -->|Queries/Updates| DB
-    
-    CV -.->|1. New Thread| CV
-    Voice -.->|1. New Thread| Voice
-```
+![Context Compaction Overview](diagrams/svg/context_compaction_overview.svg)
 
 ## ***`Model & Agent Registry`***
 
