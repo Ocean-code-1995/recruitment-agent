@@ -25,6 +25,7 @@ from src.backend.agents import (
 
 SYSTEM_PROMPT = get_prompt(
     template_name="Supervisor",
+    latest_version=True,
     local_prompt_path="supervisor/v2.txt",
 )
 

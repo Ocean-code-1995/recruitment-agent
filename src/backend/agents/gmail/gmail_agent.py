@@ -18,7 +18,8 @@ UV_PATH = shutil.which("uv")
 
 SYSTEM_PROMPT = get_prompt(
     template_name="GMail",
-    latest_version=True
+    latest_version=True,
+    local_prompt_path="gmail/v1.txt",
 )
 
 @tool

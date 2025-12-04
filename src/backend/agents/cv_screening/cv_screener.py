@@ -18,7 +18,7 @@ load_dotenv()
 
 SYSTEM_PROMPT = get_prompt(
     template_name="CV_Screener",
-    latest_version=True
+    local_prompt_path="cv_screener/v1.txt",
 )
 
 # --- The evaluator function ---

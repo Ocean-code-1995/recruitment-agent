@@ -10,7 +10,8 @@ from src.backend.prompts import get_prompt
 
 SYSTEM_PROMPT = get_prompt(
     template_name="GCalendar",
-    latest_version=True     
+    latest_version=True,
+    local_prompt_path="gcalendar/v1.txt",
 )
 
 @tool

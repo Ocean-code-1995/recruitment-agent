@@ -16,6 +16,7 @@ from src.backend.prompts import get_prompt
 
 SYSTEM_PROMPT = get_prompt(
     template_name="DB_Executor",
+    latest_version=True,
     local_prompt_path="db_executor/v2.txt",
 )
 
